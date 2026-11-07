@@ -5,6 +5,16 @@ not establish complete yt-dlp parity or verify all upstream sites.
 
 ## Local integration tests
 
+The final local suite passes 160 tests plus 29 unittest subtests on Python 3.12.
+Earlier full runs also passed on Python 3.11 and 3.14; the final commit is checked
+by the linked CI matrix. Ruff checks and wheel/source builds pass. A clean wheel
+installation was verified without yt-dlp installed.
+
+A real CLI SIGINT subprocess test verifies prompt exit 130 during an active
+transfer and retention of a resumable partial. Separate FFmpeg subprocess tests
+verify cancellation during adaptive transfer and conversion. Stalled network
+I/O can still take the configured socket timeout to return.
+
 The offline suite exercises actual local HTTP servers, redirect/authentication
 boundaries, mixed pages, RSS/Atom/JSON feeds, MIME and arbitrary binary resources,
 byte integrity, truncation, range/validator edge cases, transient retries,

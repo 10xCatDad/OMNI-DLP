@@ -16,6 +16,8 @@ from typing import TYPE_CHECKING
 from .models import DownloadResult, Media, OmniError
 
 if TYPE_CHECKING:
+    from threading import Event
+
     from .transfer import TransferOptions
 
 _AUDIO = {
@@ -41,8 +43,17 @@ def _temporary(destination: Path) -> Path:
     return Path(name)
 
 
-def _execute(arguments: list[str], temporary: Path, max_filesize: int | None = None, *, strict: bool = False) -> None:
+def _check_cancelled(cancel_event: Event | None) -> None:
+    if cancel_event is not None and cancel_event.is_set():
+        raise OmniError("Download cancelled")
+
+
+def _execute(
+    arguments: list[str], temporary: Path, max_filesize: int | None = None, *,
+    strict: bool = False, cancel_event: Event | None = None,
+) -> None:
     """Bound memory/log output and stop oversized transfers without committing them."""
+    _check_cancelled(cancel_event)
     with tempfile.TemporaryFile() as errors:
         try:
             process = subprocess.Popen(
@@ -53,6 +64,7 @@ def _execute(arguments: list[str], temporary: Path, max_filesize: int | None = N
             raise OmniError("Could not start FFmpeg") from exc
         try:
             while True:
+                _check_cancelled(cancel_event)
                 if max_filesize is not None and temporary.stat().st_size > max_filesize:
                     raise OmniError("Adaptive media exceeds the configured maximum file size")
                 if errors.tell() > 65536:
@@ -66,10 +78,11 @@ def _execute(arguments: list[str], temporary: Path, max_filesize: int | None = N
             if process.poll() is None:
                 process.terminate()
                 try:
-                    process.wait(timeout=5)
+                    process.wait(timeout=1 if cancel_event is not None and cancel_event.is_set() else 5)
                 except subprocess.TimeoutExpired:
                     process.kill()
                     process.wait()
+        _check_cancelled(cancel_event)
         errors.seek(0, os.SEEK_END)
         if code or errors.tell():
             # FFmpeg can skip unavailable segments and still return zero. Treat
@@ -112,6 +125,7 @@ def download_stream(media: Media, options: TransferOptions | None = None) -> Dow
     from .transfer import TransferOptions, _destination_lock, check_existing, output_path, record_complete, validate_url
 
     options = options or TransferOptions()
+    _check_cancelled(options.cancel_event)
     validate_url(media.url)
     if options.rate_limit is not None:
         raise OmniError("Native adaptive streams do not support rate limits; use compatibility mode")
@@ -135,6 +149,7 @@ def download_stream(media: Media, options: TransferOptions | None = None) -> Dow
         raise OmniError("Adaptive output must use a supported container extension: " + ", ".join(sorted(_CONTAINERS)))
     if extension != "mkv":
         converted = replace(converted, ext=extension, mime_type="")
+    variant = f"adaptive:{_CONTAINERS[extension]}"
     arguments = [
         "-protocol_whitelist", "http,https,tcp,tls",
         "-format_whitelist", "hls,dash," + _LOCAL_FORMATS,
@@ -144,22 +159,23 @@ def download_stream(media: Media, options: TransferOptions | None = None) -> Dow
         arguments += ["-headers", "".join(f"{name}: {value}\r\n" for name, value in headers.items())]
     arguments += ["-i", media.url, "-map", "0:v?", "-map", "0:a?", "-map", "0:s?", "-c", "copy", "-f", _CONTAINERS[extension]]
     with _destination_lock(destination):
-        existing = check_existing(converted, destination, options.overwrite)
+        existing = check_existing(converted, destination, options.overwrite, variant=variant)
         if existing is not None:
             return existing
         _ffmpeg()
         temporary = _temporary(destination)
         try:
-            _execute(arguments, temporary, options.max_filesize, strict=True)
+            _execute(arguments, temporary, options.max_filesize, strict=True, cancel_event=options.cancel_event)
+            _check_cancelled(options.cancel_event)
             _publish(temporary, destination, options.overwrite)
-            return record_complete(converted, destination)
+            return record_complete(converted, destination, variant=variant)
         finally:
             temporary.unlink(missing_ok=True)
 
 
 def transcode(
     result: DownloadResult, *, audio_format: str | None = None, remux_format: str | None = None,
-    overwrite: bool = False,
+    overwrite: bool = False, cancel_event: Event | None = None,
 ) -> DownloadResult:
     """Extract audio or remux a local download, retaining the original file.
 
@@ -168,6 +184,7 @@ def transcode(
     """
     from .transfer import _destination_lock, check_existing, file_digest, record_complete
 
+    _check_cancelled(cancel_event)
     if bool(audio_format) == bool(remux_format):
         raise OmniError("Choose exactly one audio format or remux format")
     audio_format = audio_format.lower() if audio_format else None
@@ -199,7 +216,8 @@ def transcode(
             return existing
         temporary = _temporary(destination)
         try:
-            _execute(arguments, temporary)
+            _execute(arguments, temporary, cancel_event=cancel_event)
+            _check_cancelled(cancel_event)
             _publish(temporary, destination, overwrite)
             return record_complete(converted, destination, variant=variant)
         finally:

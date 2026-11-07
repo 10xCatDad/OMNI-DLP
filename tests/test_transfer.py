@@ -107,7 +107,7 @@ class TransferTests(unittest.TestCase):
 
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
-        self.directory = Path(self.temp.name)
+        self.directory = Path(self.temp.name).resolve()
         self.options = TransferOptions(directory=self.temp.name, retries=0)
         Handler.requests.clear()
         Handler.count.clear()
@@ -380,6 +380,53 @@ class TransferTests(unittest.TestCase):
         for key, value in [("retries", -1), ("timeout", 0), ("rate_limit", 0), ("max_filesize", -1), ("timeout", float("nan")), ("timeout", float("inf")), ("retries", 1.5), ("rate_limit", 1.5)]:
             with self.subTest(key=key), self.assertRaises(OmniError):
                 download(self.media(), TransferOptions(directory=self.temp.name, **{key: value}))
+
+    def test_pre_cancelled_download_makes_no_request(self):
+        self.options.cancel_event = threading.Event()
+        self.options.cancel_event.set()
+        with self.assertRaisesRegex(OmniError, "Download cancelled"):
+            download(self.media(), self.options)
+        self.assertFalse(Handler.requests)
+        self.assertEqual(list(self.directory.iterdir()), [])
+
+    def test_cancel_during_rate_wait_retains_resumable_partial(self):
+        event = threading.Event()
+        self.options.cancel_event = event
+        self.options.rate_limit = 1024
+
+        def cancel(_delay):
+            event.set()
+            return True
+
+        with patch.object(event, "wait", side_effect=cancel):
+            with self.assertRaisesRegex(OmniError, "Download cancelled"):
+                download(self.media(), self.options)
+        target = output_path(self.media(), self.options)
+        part = Path(str(target) + ".part")
+        size = part.stat().st_size
+        self.assertGreater(size, 0)
+        self.assertLess(size, len(DATA))
+        state = json.loads(Path(str(target) + ".part.json").read_text())
+        self.assertEqual(state["sha256"], hashlib.sha256(part.read_bytes()).hexdigest())
+        self.assertFalse(target.exists())
+        event.clear()
+        self.options.rate_limit = None
+        self.assert_bytes(download(self.media(), self.options))
+        self.assertEqual(Handler.requests[-1][1]["Range"], f"bytes={size}-")
+
+    def test_cancel_interrupts_retry_wait(self):
+        event = threading.Event()
+        self.options.cancel_event = event
+        self.options.retries = 3
+
+        def cancel(_delay):
+            event.set()
+            return True
+
+        with patch.object(event, "wait", side_effect=cancel):
+            with self.assertRaisesRegex(OmniError, "Download cancelled"):
+                download(self.media("/retry"), self.options)
+        self.assertEqual(Handler.count["/retry"], 1)
 
 
 if __name__ == "__main__":

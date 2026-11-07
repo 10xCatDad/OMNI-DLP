@@ -4,8 +4,13 @@ import contextlib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import io
 import json
+import os
 from pathlib import Path
+import signal
+import subprocess
+import sys
 import threading
+import time
 from unittest.mock import patch
 
 import pytest
@@ -20,6 +25,8 @@ def web():
         "/sound.mp3": ("audio/mpeg", b"ID3audio bytes"),
         "/book.pdf": ("application/pdf", b"%PDF-1.7\ndocument bytes"),
         "/words.vtt": ("text/vtt", b"WEBVTT\n\n00:00.000 --> 00:01.000\nHello\n"),
+        "/raw.json": ("application/json", b'{"count": 123, "metadata": "this is a data file"}\n'),
+        "/raw.m3u8": ("application/vnd.apple.mpegurl", b'#EXTM3U\n#EXTINF:1,\nsegment.ts\n'),
         "/page": ("text/html", b'<html><img src="/photo.png?secret=hidden"><audio src="/sound.mp3"></audio><a href="/book.pdf">Book</a><track src="/words.vtt"></html>'),
     }
     requests = []
@@ -214,3 +221,81 @@ def test_manifest_cannot_corrupt_archive_and_fatal_error_is_json(web, tmp_path):
     assert event["schema_version"] == 1 and event["event"] == "error"
     assert "overlaps" in event["error"]
     assert ("GET", "/photo.png") not in requests
+
+
+@pytest.mark.parametrize("path", ["/raw.json", "/raw.m3u8"])
+def test_direct_downloads_raw_structured_files_without_parsing(web, tmp_path, path):
+    base, payloads, requests = web
+    with patch("omni_dlp.engine.discover_plugin") as plugin, patch("omni_dlp.engine.discover") as discovery:
+        status, _, err = invoke([base + path, "--direct", "-P", str(tmp_path), "-o", "%(title)s.%(ext)s"])
+    assert status == 0, err
+    assert (tmp_path / path.lstrip("/")).read_bytes() == payloads[path][1]
+    plugin.assert_not_called()
+    discovery.assert_not_called()
+    assert requests == [("GET", path)]
+
+
+@pytest.mark.skipif(os.name == "nt", reason="POSIX SIGINT subprocess regression")
+def test_sigint_cancels_slow_download_and_retains_partial(tmp_path):
+    stopped = threading.Event()
+    sent = threading.Event()
+
+    class SlowHandler(BaseHTTPRequestHandler):
+        def do_HEAD(self):
+            self.send_response(200)
+            self.send_header("Content-Type", "application/octet-stream")
+            self.send_header("Content-Length", str(100 * 1024 * 1024))
+            self.end_headers()
+
+        def do_GET(self):
+            self.send_response(200)
+            self.send_header("Content-Type", "application/octet-stream")
+            self.send_header("Content-Length", str(100 * 1024 * 1024))
+            self.send_header("ETag", '"slow-fixture"')
+            self.end_headers()
+            try:
+                while not stopped.is_set():
+                    self.wfile.write(b"x" * 1024)
+                    self.wfile.flush()
+                    sent.set()
+                    stopped.wait(0.05)
+            except (BrokenPipeError, ConnectionResetError):
+                pass
+
+        def log_message(self, *args):
+            pass
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), SlowHandler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    env = dict(os.environ)
+    env["PYTHONPATH"] = str(Path(cli.__file__).resolve().parents[1])
+    process = subprocess.Popen([
+        sys.executable, "-m", "omni_dlp", f"http://127.0.0.1:{server.server_port}/slow.bin",
+        "--no-plugins", "-P", str(tmp_path), "-o", "slow.bin", "--socket-timeout", "10",
+    ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env)
+    try:
+        assert sent.wait(5), "download did not start"
+        partial = tmp_path / "slow.bin.part"
+        deadline = time.monotonic() + 5
+        while (not partial.exists() or not partial.stat().st_size) and time.monotonic() < deadline:
+            time.sleep(0.05)
+        assert partial.exists() and partial.stat().st_size > 0
+        started = time.monotonic()
+        process.send_signal(signal.SIGINT)
+        stdout, stderr = process.communicate(timeout=4)
+        assert process.returncode == 130, stderr
+        assert time.monotonic() - started < 4
+        assert "Interrupted" in stderr and "Traceback" not in stderr
+        assert not stdout
+        assert partial.is_file() and partial.stat().st_size > 0
+        assert (tmp_path / "slow.bin.part.json").is_file()
+        assert not (tmp_path / "slow.bin").exists()
+    finally:
+        stopped.set()
+        if process.poll() is None:
+            process.kill()
+            process.communicate()
+        server.shutdown()
+        server.server_close()
+        thread.join()

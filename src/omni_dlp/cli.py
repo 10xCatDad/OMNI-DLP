@@ -61,6 +61,7 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--audio-format", choices=["mp3", "m4a", "m4b", "aac", "flac", "opus", "ogg", "wav", "aiff"], default="mp3")
     p.add_argument("--remux-video", choices=["mp4", "mkv", "webm", "mov"])
     p.add_argument("--no-plugins", action="store_true")
+    p.add_argument("--direct", action="store_true", help="Download each URL as raw bytes, without discovery or plugins")
     p.add_argument("--ignore-errors", action="store_true", help="Continue remaining URLs; exit status remains nonzero on failures")
     p.add_argument("-q", "--quiet", action="store_true")
     return p
@@ -198,7 +199,7 @@ def main(argv: list[str] | None = None) -> int:
             media_types=set(opts.media_type) if opts.media_type else None, jobs=opts.jobs,
             max_items=opts.max_items, archive=opts.download_archive,
             audio_format=opts.audio_format if opts.extract_audio else None,
-            remux_format=opts.remux_video, plugins=not opts.no_plugins))
+            remux_format=opts.remux_video, plugins=not opts.no_plugins, direct=opts.direct))
         errors = 0
         def error(media, exc):
             nonlocal errors

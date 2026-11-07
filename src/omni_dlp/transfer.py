@@ -18,6 +18,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 from pathlib import Path
+from threading import Event
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote, unquote, urlsplit, urlunsplit
 from urllib.request import HTTPCookieProcessor, HTTPRedirectHandler, Request
@@ -42,6 +43,7 @@ class TransferOptions:
     max_filesize: int | None = None
     headers: dict[str, str] = field(default_factory=dict)
     cookies: str | None = None
+    cancel_event: Event | None = field(default=None, repr=False, compare=False)
 
 
 def validate_url(url: str) -> None:
@@ -62,7 +64,11 @@ def validate_url(url: str) -> None:
 
 def _origin(url: str) -> tuple[str, str | None, int | None]:
     parsed = urlsplit(url)
-    return parsed.scheme, parsed.hostname, parsed.port or (443 if parsed.scheme == "https" else 80)
+    try:
+        hostname = parsed.hostname.encode("idna").decode("ascii").lower() if parsed.hostname else None
+    except UnicodeError as exc:
+        raise OmniError("Invalid internationalized hostname") from exc
+    return parsed.scheme, hostname, parsed.port or (443 if parsed.scheme == "https" else 80)
 
 
 def request_url(url: str) -> str:
@@ -345,6 +351,19 @@ def _save_partial(part: Path, statepath: Path, state: dict) -> None:
         _write_json(statepath, state)
 
 
+def _check_cancel(options: TransferOptions) -> None:
+    if options.cancel_event is not None and options.cancel_event.is_set():
+        raise OmniError("Download cancelled")
+
+
+def _wait(delay: float, options: TransferOptions) -> None:
+    if options.cancel_event is not None:
+        if options.cancel_event.wait(delay):
+            raise OmniError("Download cancelled")
+    else:
+        time.sleep(delay)
+
+
 def _transfer(media: Media, path: Path, options: TransferOptions) -> DownloadResult:
     existing = check_existing(media, path, options.overwrite)
     if existing:
@@ -362,6 +381,7 @@ def _transfer(media: Media, path: Path, options: TransferOptions) -> DownloadRes
     source_hash = _source_hash(media)
     last_error = "Transfer failed"
     for attempt in range(options.retries + 1):
+        _check_cancel(options)
         state = _partial_state(media, part, statepath, options)
         offset = part.stat().st_size if state else 0
         attempt_headers = dict(headers)
@@ -425,8 +445,9 @@ def _transfer(media: Media, path: Path, options: TransferOptions) -> DownloadRes
                 try:
                     with os.fdopen(fd, "ab" if offset else "wb") as handle:
                         while True:
+                            _check_cancel(options)
                             try:
-                                chunk = response.read(min(_CHUNK, options.rate_limit or _CHUNK))
+                                chunk = response.read1(min(_CHUNK, options.rate_limit or _CHUNK))
                             except http.client.IncompleteRead as exc:
                                 chunk = exc.partial
                                 if chunk:
@@ -444,13 +465,14 @@ def _transfer(media: Media, path: Path, options: TransferOptions) -> DownloadRes
                             if options.rate_limit:
                                 wait = received / options.rate_limit - (time.monotonic() - started)
                                 if wait > 0:
-                                    time.sleep(wait)
+                                    _wait(wait, options)
                         handle.flush()
                         os.fsync(handle.fileno())
                 finally:
                     _save_partial(part, statepath, state)
                 if total is not None and offset + received != total:
                     raise http.client.IncompleteRead(b"", total - offset - received)
+                _check_cancel(options)
                 if options.overwrite:
                     _check_regular(path)
                     os.replace(part, path)
@@ -477,13 +499,14 @@ def _transfer(media: Media, path: Path, options: TransferOptions) -> DownloadRes
         except (URLError, TimeoutError, socket.timeout, ConnectionError, http.client.HTTPException) as exc:
             last_error = type(exc).__name__
         if attempt < options.retries:
-            time.sleep(_retry_delay(attempt, retry_headers))
+            _wait(_retry_delay(attempt, retry_headers), options)
     raise OmniError(f"Download failed after {options.retries + 1} attempt(s): {last_error}; partial data retained")
 
 
 def download(media: Media, options: TransferOptions | None = None) -> DownloadResult:
     """Download one HTTP media object, preserving original bytes and resumability."""
     options = options or TransferOptions()
+    _check_cancel(options)
     validate_url(media.url)
     if (not isinstance(options.retries, int) or options.retries < 0
             or not isinstance(options.timeout, (int, float))

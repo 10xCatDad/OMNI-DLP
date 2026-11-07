@@ -6,6 +6,7 @@ from dataclasses import dataclass, field, replace
 import math
 from pathlib import Path
 import sqlite3
+from threading import Event
 from typing import Callable
 
 from .archive import Archive
@@ -25,6 +26,7 @@ class Options:
     audio_format: str | None = None
     remux_format: str | None = None
     plugins: bool = True
+    direct: bool = False
 
 
 class Downloader:
@@ -46,6 +48,20 @@ class Downloader:
 
     def inspect(self, url: str) -> list[Media]:
         opts = self.options
+        if opts.direct:
+            import hashlib
+            from urllib.parse import unquote, urldefrag, urlsplit
+            from .transfer import validate_url
+            from .types import classify
+            validate_url(url)
+            url = urldefrag(url)[0]
+            kind, extension = classify(url)
+            if opts.media_types and kind not in opts.media_types:
+                return []
+            basename = Path(unquote(urlsplit(url).path)).name
+            return [Media(url=url, title=Path(basename).stem or "media",
+                          id=hashlib.sha256(url.encode()).hexdigest()[:16], kind=kind,
+                          ext=extension, source_url=url)]
         kwargs = dict(headers=opts.transfer.headers, cookies=opts.transfer.cookies,
                       timeout=opts.transfer.timeout, media_types=opts.media_types,
                       max_items=opts.max_items)
@@ -58,9 +74,13 @@ class Downloader:
 
     def fetch_one(self, media: Media) -> DownloadResult:
         opts = self.options
+        if opts.transfer.cancel_event is not None and opts.transfer.cancel_event.is_set():
+            raise OmniError("Download cancelled")
         # Protect archive storage even for callers using this single-item API.
         self.output_paths(media)
         variant = f"audio={opts.audio_format};remux={opts.remux_format}"
+        if opts.direct:
+            variant += ";direct=True"
         if self.archive:
             try:
                 existing = self.archive.lookup(media, variant)
@@ -72,7 +92,7 @@ class Downloader:
                         "conversion": opts.audio_format or opts.remux_format})
                 return existing
         protocol = media.metadata.get("protocol")
-        if protocol in {"hls", "dash"} or media.ext in {"m3u8", "mpd"}:
+        if not opts.direct and (protocol in {"hls", "dash"} or media.ext in {"m3u8", "mpd"}):
             from .streams import download_stream
             result = download_stream(media, opts.transfer)
         else:
@@ -80,7 +100,7 @@ class Downloader:
         if opts.audio_format or opts.remux_format:
             from .streams import transcode
             result = transcode(result, audio_format=opts.audio_format, remux_format=opts.remux_format,
-                               overwrite=opts.transfer.overwrite)
+                               overwrite=opts.transfer.overwrite, cancel_event=opts.transfer.cancel_event)
         if self.archive:
             try:
                 self.archive.record(result, variant)
@@ -91,7 +111,7 @@ class Downloader:
     def output_paths(self, item: Media) -> list[Path]:
         """Planned media outputs, including retained conversion inputs."""
         from .transfer import output_path
-        adaptive = item.ext in {"m3u8", "mpd"} or item.metadata.get("protocol") in {"hls", "dash"}
+        adaptive = not self.options.direct and (item.ext in {"m3u8", "mpd"} or item.metadata.get("protocol") in {"hls", "dash"})
         mapped = replace(item, ext="mkv") if adaptive else item
         target = output_path(mapped, self.options.transfer)
         destinations = [target]
@@ -126,7 +146,13 @@ class Downloader:
                 raise OmniError("Multiple items resolve to overlapping output paths; include %(id)s in --output")
             paths.update(occupied)
         completed: dict[str, DownloadResult] = {}
-        with ThreadPoolExecutor(max_workers=self.options.jobs) as pool:
+        transfer = self.options.transfer
+        previous_event = transfer.cancel_event
+        cancel_event = previous_event if previous_event is not None else Event()
+        transfer.cancel_event = cancel_event
+        pool = ThreadPoolExecutor(max_workers=self.options.jobs)
+        pending = {}
+        try:
             pending = {pool.submit(self.fetch_one, item): item for item in unique}
             for future in as_completed(pending):
                 item = pending[future]
@@ -136,11 +162,19 @@ class Downloader:
                     if on_error:
                         on_error(item, exc)
                     else:
-                        for job in pending:
-                            job.cancel()
                         raise
                 else:
                     completed[item.url] = result
                     if on_result:
                         on_result(result)
+        except BaseException:
+            # Set cancellation before waiting for workers: a context manager
+            # alone would wait for a live/large download to finish after Ctrl-C.
+            cancel_event.set()
+            for job in pending:
+                job.cancel()
+            raise
+        finally:
+            pool.shutdown(wait=True, cancel_futures=True)
+            transfer.cancel_event = previous_event
         return [completed[item.url] for item in unique if item.url in completed]

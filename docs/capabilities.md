@@ -7,7 +7,7 @@ optional upstream installation. Similar flag names do not imply equal semantics.
 
 | Capability | Native status | Evidence / boundary |
 | --- | --- | --- |
-| Any HTTP(S) file bytes | Implemented | No codec requirement; streams bytes, including unknown types |
+| Any HTTP(S) file bytes | Implemented | No codec requirement; `--direct` bypasses discovery for raw JSON/XML and other files |
 | Media categories | Implemented | Image, audio, video, document, archive, font, model, subtitle, other |
 | Static galleries and mixed pages | Implemented | HTML media/source/picture/srcset/lazy attributes, metadata and JSON-LD |
 | RSS/Atom podcasts and JSON Feed | Implemented | Enclosures/attachments, relative links, deduplication |
@@ -16,6 +16,7 @@ optional upstream installation. Similar flag names do not imply equal semantics.
 | Resumable direct transfers | Implemented | Source/partial digests, ETag or modification date, checked Content-Range |
 | Retries, speed, size | Implemented for direct HTTP | Per-item limits; bounded retries and Retry-After |
 | Disk-space preflight | Implemented for known-size HTTP | Free-space estimate is advisory; concurrent changes can still cause ENOSPC |
+| Cancellation | Implemented | Ctrl-C stops workers and FFmpeg; stalled HTTP I/O remains bounded by socket timeout |
 | Concurrency | Implemented | Item-level worker pool and destination locks; no fragment concurrency |
 | Output filenames | Implemented subset | title, id, ext, kind, playlist_index; confined relative paths |
 | Integrity and archives | Implemented | SHA-256 completion sidecars and SQLite archive with file verification |

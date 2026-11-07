@@ -8,6 +8,7 @@ import shutil
 import subprocess
 import tempfile
 import threading
+import time
 import unittest
 from dataclasses import replace
 from pathlib import Path
@@ -15,7 +16,8 @@ from unittest.mock import patch
 
 from omni_dlp.models import Media, OmniError
 from omni_dlp.streams import download_stream, transcode
-from omni_dlp.transfer import TransferOptions, _destination_lock, output_path
+from omni_dlp import streams as stream_module
+from omni_dlp.transfer import TransferOptions, _destination_lock, download, output_path
 
 
 class QuietHandler(http.server.SimpleHTTPRequestHandler):
@@ -46,6 +48,14 @@ class StreamValidationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder, patch("omni_dlp.streams.shutil.which", return_value=None):
             with self.assertRaisesRegex(OmniError, "install ffmpeg"):
                 download_stream(Media("https://example.com/live.m3u8", id="test", title="test"), TransferOptions(directory=folder))
+
+    def test_precancelled_download_does_not_start_ffmpeg(self):
+        cancelled = threading.Event()
+        cancelled.set()
+        with patch("omni_dlp.streams.subprocess.Popen") as popen:
+            with self.assertRaisesRegex(OmniError, "cancelled"):
+                download_stream(Media("https://example.com/live.m3u8"), TransferOptions(cancel_event=cancelled))
+            popen.assert_not_called()
 
 
 @unittest.skipUnless(shutil.which("ffmpeg") and shutil.which("ffprobe"), "FFmpeg is not installed")
@@ -90,6 +100,71 @@ class AdaptiveIntegrationTests(unittest.TestCase):
     def assert_no_output(self):
         self.assertEqual([p for p in Path(self.output.name).iterdir() if not p.name.endswith(".omni.lock")], [])
 
+    def assert_cancelled_process(self, call, cancelled):
+        """Run a real slow FFmpeg fixture through the public operation's lifecycle."""
+        real_execute = stream_module._execute
+        real_popen = subprocess.Popen
+        started = threading.Event()
+        processes = []
+        failures = []
+
+        def spawn(*args, **kwargs):
+            process = real_popen(*args, **kwargs)
+            processes.append(process)
+            started.set()
+            return process
+
+        def slow_fixture(_arguments, temporary, _limit=None, **kwargs):
+            self.assertIs(kwargs.get("cancel_event"), cancelled)
+            # A generated, realtime input avoids depending on a live broadcaster.
+            return real_execute([
+                "-re", "-f", "lavfi", "-i", "sine=frequency=440:sample_rate=48000",
+                "-t", "30", "-c:a", "pcm_s16le", "-f", "matroska",
+            ], temporary, cancel_event=kwargs.get("cancel_event"))
+
+        def run():
+            try:
+                call()
+            except BaseException as exc:
+                failures.append(exc)
+
+        with patch("omni_dlp.streams.subprocess.Popen", side_effect=spawn), patch("omni_dlp.streams._execute", side_effect=slow_fixture):
+            worker = threading.Thread(target=run, daemon=True)
+            worker.start()
+            try:
+                self.assertTrue(started.wait(5), "FFmpeg did not start")
+                time.sleep(0.2)
+                self.assertIsNone(processes[0].poll(), "Fixture finished before cancellation")
+                start = time.monotonic()
+                cancelled.set()
+                worker.join(3)
+                self.assertFalse(worker.is_alive(), "Cancellation did not stop FFmpeg promptly")
+                self.assertLess(time.monotonic() - start, 3)
+                self.assertIsNotNone(processes[0].poll())
+                self.assertEqual(len(failures), 1)
+                self.assertIsInstance(failures[0], OmniError)
+                self.assertIn("cancelled", str(failures[0]))
+            finally:
+                cancelled.set()
+                for process in processes:
+                    if process.poll() is None:
+                        process.kill()
+                worker.join(5)
+
+    def test_adaptive_cancellation_kills_process_and_cleans_partial_output(self):
+        cancelled = threading.Event()
+        options = TransferOptions(directory=self.output.name, cancel_event=cancelled)
+        self.assert_cancelled_process(lambda: download_stream(self.media("stream.m3u8"), options), cancelled)
+        self.assert_no_output()
+
+    def test_conversion_cancellation_retains_source_and_cleans_partial_output(self):
+        source = download_stream(self.media("stream.m3u8"), self.options)
+        cancelled = threading.Event()
+        self.assert_cancelled_process(lambda: transcode(source, audio_format="flac", cancel_event=cancelled), cancelled)
+        self.assertTrue(Path(source.path).is_file())
+        self.assertFalse(Path(source.path).with_suffix(".flac").exists())
+        self.assertEqual(list(Path(self.output.name).glob(".omni-*")), [])
+
     def test_hls_and_dash_preserve_audio_video_and_verified_repeat(self):
         for manifest in ("stream.m3u8", "stream.mpd"):
             with self.subTest(manifest=manifest):
@@ -133,6 +208,20 @@ class AdaptiveIntegrationTests(unittest.TestCase):
         self.assertEqual(result.media.ext, "mp4")
         process = subprocess.run(["ffprobe", "-v", "error", "-show_format", "-of", "json", result.path], check=True, capture_output=True, text=True)
         self.assertIn("mp4", json.loads(process.stdout)["format"]["format_name"])
+
+    def test_raw_manifest_cannot_be_skipped_as_completed_adaptive_media(self):
+        media = self.media("stream.m3u8")
+        options = TransferOptions(directory=self.output.name, output="shared.mkv")
+        raw = download(media, options)
+        self.assertTrue(Path(raw.path).read_bytes().startswith(b"#EXTM3U"))
+        with self.assertRaisesRegex(OmniError, "matching completion record"):
+            download_stream(media, options)
+        adaptive = download_stream(media, replace(options, overwrite=True))
+        self.assertFalse(adaptive.skipped)
+        self.assertEqual({stream["codec_type"] for stream in self.probe(adaptive.path)}, {"audio", "video"})
+        self.assertTrue(download_stream(media, options).skipped)
+        with self.assertRaisesRegex(OmniError, "matching completion record"):
+            download(media, options)
 
     def test_size_limit_does_not_commit_output(self):
         with self.assertRaisesRegex(OmniError, "maximum file size"):

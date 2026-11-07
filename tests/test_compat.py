@@ -103,4 +103,4 @@ class CompatibilityTests(unittest.TestCase):
             self.assertEqual(payload["args"], arguments)
             self.assertEqual(payload["stdin"], "terminal input\n")
             self.assertEqual(payload["env"], "inherited")
-            self.assertEqual(Path(payload["cwd"]), root)
+            self.assertEqual(Path(payload["cwd"]).resolve(), root.resolve())

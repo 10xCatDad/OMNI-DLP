@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import replace
 import hashlib
 import sqlite3
+from threading import Event
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -158,3 +159,31 @@ def test_outputs_cannot_replace_archive_or_sqlite_journal(tmp_path, suffix):
 def test_invalid_options_fail_before_work(options):
     with pytest.raises(OmniError):
         Downloader(options)
+
+
+def test_interrupt_signals_workers_before_waiting_and_restores_options(tmp_path):
+    started, stopped = Event(), Event()
+    downloader = Downloader(Options(transfer=TransferOptions(directory=str(tmp_path))))
+
+    def fetch(item):
+        event = downloader.options.transfer.cancel_event
+        started.set()
+        assert event.wait(3), "worker did not receive cancellation"
+        stopped.set()
+        raise OmniError("Download cancelled")
+
+    def interrupted(_):
+        assert started.wait(3)
+        raise KeyboardInterrupt
+
+    with patch.object(downloader, "fetch_one", side_effect=fetch), patch("omni_dlp.engine.as_completed", side_effect=interrupted):
+        with pytest.raises(KeyboardInterrupt):
+            downloader.fetch([Media("https://example.invalid/a", id="a")])
+    assert stopped.is_set()
+    assert downloader.options.transfer.cancel_event is None
+
+
+def test_direct_mode_still_filters_media_types():
+    downloader = Downloader(Options(direct=True, media_types={"image"}))
+    assert downloader.inspect("https://example.invalid/a.json") == []
+    assert downloader.inspect("https://example.invalid/a.png")[0].kind == "image"

@@ -32,6 +32,9 @@ omni-dlp 'https://example.org/gallery/' -P downloads --jobs 4
 # Only images, including picture/srcset and common lazy-loading attributes
 omni-dlp --media-type image 'https://example.org/gallery/'
 
+# Download a JSON/XML file as raw bytes instead of parsing it
+omni-dlp --direct 'https://example.org/data.json'
+
 # Inspect without downloading; metadata URLs are credential-redacted
 omni-dlp inspect 'https://example.org/podcast.xml'
 
@@ -49,7 +52,7 @@ These are example addresses. `--dump-json` and `--simulate` also perform discove
 
 Native discovery handles direct HTTP(S) resources, static HTML media and metadata, RSS/Atom enclosures, JSON Feed attachments, and JSON media manifests. It does not execute JavaScript, solve authentication challenges, or recursively crawl websites. Images are full downloadable assets rather than merely video thumbnails. Known file types get useful categories; arbitrary HTTP files remain downloadable as `other`. Server MIME metadata and URL extensions drive classification; content decoding and magic-byte validation are not implemented.
 
-The native transfer engine streams to temporary files, validates range responses and resource validators, checks truncation, calculates SHA-256, and publishes completed files atomically. It supports bounded retries, per-transfer speed and size limits, headers, Netscape cookies, and safe output templates. Resume requires a matching partial record and server support; unsafe appends are rejected. A completed file is skipped only when its source identity and digest match. If an existing file fails verification, choose a new path or explicitly use `--force-overwrites`.
+The native transfer engine streams to temporary files, validates range responses and resource validators, checks truncation, calculates SHA-256, and publishes completed files atomically. It supports bounded retries, per-transfer speed and size limits, headers, Netscape cookies, and safe output templates. Resume requires a matching partial record and server support; unsafe appends are rejected. Ctrl-C cancels queued jobs, interrupts rate/retry waits, and stops FFmpeg. An active stalled HTTP request can take up to the socket timeout to stop. A completed file is skipped only when its source identity and digest match. If an existing file fails verification, choose a new path or explicitly use `--force-overwrites`.
 
 Output templates support the native record fields, for example `%(kind)s/%(title)s [%(id)s].%(ext)s`. See [capabilities](docs/capabilities.md) for precise boundaries, adaptive-stream restrictions, and migration milestones.
 
