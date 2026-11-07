@@ -1,0 +1,428 @@
+{
+  "provenance": {
+    "repository": "https://github.com/yt-dlp/yt-dlp",
+    "commit": "412e7f0a4b0588fe884a02b344ac66a06538475b",
+    "commit_time": "2026-11-04T07:16:26Z",
+    "captured_at": "2026-11-07T23:22:23.241576+00:00",
+    "source_tree_clean": true,
+    "method": "Upstream parser/registry introspection and Python AST; no live site tests",
+    "source_sha256": {
+      "README.md": "6adba80a892aee34940550ee8d7085041afca6140b7ac56d6414f1e6eb484bfe",
+      "supportedsites.md": "cb2590beb7c81dbd607452445706615c2d8b04002045f01d9b12bedd71ca7fa4",
+      "yt_dlp/options.py": "3c4f75696a3c7a2528c5bcec38bed4919469f00a6e4e401026ca8b60bb6971f5"
+    },
+    "scope": "All option declarations and registered extractor classes in this commit; all top-level downloader and postprocessor classes with FD/PP suffixes. Not every implicit behavior, metadata field, plugin, historical option, or possible URL."
+  },
+  "downloaders": [
+    {
+      "class": "BunnyCdnFD",
+      "module": "yt_dlp.downloader.bunnycdn",
+      "bases": [
+        "FileDownloader"
+      ]
+    },
+    {
+      "class": "DashSegmentsFD",
+      "module": "yt_dlp.downloader.dash",
+      "bases": [
+        "FragmentFD"
+      ]
+    },
+    {
+      "class": "ExternalFD",
+      "module": "yt_dlp.downloader.external",
+      "bases": [
+        "FragmentFD"
+      ]
+    },
+    {
+      "class": "CurlFD",
+      "module": "yt_dlp.downloader.external",
+      "bases": [
+        "ExternalFD"
+      ]
+    },
+    {
+      "class": "AxelFD",
+      "module": "yt_dlp.downloader.external",
+      "bases": [
+        "ExternalFD"
+      ]
+    },
+    {
+      "class": "WgetFD",
+      "module": "yt_dlp.downloader.external",
+      "bases": [
+        "ExternalFD"
+      ]
+    },
+    {
+      "class": "Aria2cFD",
+      "module": "yt_dlp.downloader.external",
+      "bases": [
+        "ExternalFD"
+      ]
+    },
+    {
+      "class": "HttpieFD",
+      "module": "yt_dlp.downloader.external",
+      "bases": [
+        "ExternalFD"
+      ]
+    },
+    {
+      "class": "FFmpegFD",
+      "module": "yt_dlp.downloader.external",
+      "bases": [
+        "ExternalFD"
+      ]
+    },
+    {
+      "class": "F4mFD",
+      "module": "yt_dlp.downloader.f4m",
+      "bases": [
+        "FragmentFD"
+      ]
+    },
+    {
+      "class": "FC2LiveFD",
+      "module": "yt_dlp.downloader.fc2",
+      "bases": [
+        "FileDownloader"
+      ]
+    },
+    {
+      "class": "FragmentFD",
+      "module": "yt_dlp.downloader.fragment",
+      "bases": [
+        "FileDownloader"
+      ]
+    },
+    {
+      "class": "HlsFD",
+      "module": "yt_dlp.downloader.hls",
+      "bases": [
+        "FragmentFD"
+      ]
+    },
+    {
+      "class": "HttpFD",
+      "module": "yt_dlp.downloader.http",
+      "bases": [
+        "FileDownloader"
+      ]
+    },
+    {
+      "class": "IsmFD",
+      "module": "yt_dlp.downloader.ism",
+      "bases": [
+        "FragmentFD"
+      ]
+    },
+    {
+      "class": "MhtmlFD",
+      "module": "yt_dlp.downloader.mhtml",
+      "bases": [
+        "FragmentFD"
+      ]
+    },
+    {
+      "class": "NiconicoLiveFD",
+      "module": "yt_dlp.downloader.niconico",
+      "bases": [
+        "FileDownloader"
+      ]
+    },
+    {
+      "class": "RtmpFD",
+      "module": "yt_dlp.downloader.rtmp",
+      "bases": [
+        "FileDownloader"
+      ]
+    },
+    {
+      "class": "SoopVodFD",
+      "module": "yt_dlp.downloader.soop",
+      "bases": [
+        "FileDownloader"
+      ]
+    },
+    {
+      "class": "FFmpegSinkFD",
+      "module": "yt_dlp.downloader.websocket",
+      "bases": [
+        "FileDownloader"
+      ]
+    },
+    {
+      "class": "WebSocketFragmentFD",
+      "module": "yt_dlp.downloader.websocket",
+      "bases": [
+        "FFmpegSinkFD"
+      ]
+    },
+    {
+      "class": "YoutubeLiveChatFD",
+      "module": "yt_dlp.downloader.youtube_live_chat",
+      "bases": [
+        "FragmentFD"
+      ]
+    }
+  ],
+  "protocol_dispatch": {
+    "bunnycdn": "yt_dlp.downloader.bunnycdn.BunnyCdnFD",
+    "f4m": "yt_dlp.downloader.f4m.F4mFD",
+    "fc2_live": "yt_dlp.downloader.fc2.FC2LiveFD",
+    "http_dash_segments": "yt_dlp.downloader.dash.DashSegmentsFD",
+    "http_dash_segments_generator": "yt_dlp.downloader.dash.DashSegmentsFD",
+    "ism": "yt_dlp.downloader.ism.IsmFD",
+    "m3u8": "yt_dlp.downloader.external.FFmpegFD",
+    "m3u8_native": "yt_dlp.downloader.hls.HlsFD",
+    "mhtml": "yt_dlp.downloader.mhtml.MhtmlFD",
+    "niconico_live": "yt_dlp.downloader.niconico.NiconicoLiveFD",
+    "rtmp": "yt_dlp.downloader.rtmp.RtmpFD",
+    "rtmp_ffmpeg": "yt_dlp.downloader.external.FFmpegFD",
+    "rtmpe": "yt_dlp.downloader.rtmp.RtmpFD",
+    "soopvod": "yt_dlp.downloader.soop.SoopVodFD",
+    "websocket_frag": "yt_dlp.downloader.websocket.WebSocketFragmentFD",
+    "youtube_live_chat": "yt_dlp.downloader.youtube_live_chat.YoutubeLiveChatFD",
+    "youtube_live_chat_replay": "yt_dlp.downloader.youtube_live_chat.YoutubeLiveChatFD"
+  },
+  "default_downloader": "yt_dlp.downloader.http.HttpFD",
+  "external_downloaders": [
+    "aria2c",
+    "axel",
+    "curl",
+    "ffmpeg",
+    "httpie",
+    "wget"
+  ],
+  "postprocessor_classes": [
+    {
+      "class": "EmbedThumbnailPP",
+      "module": "yt_dlp.postprocessor.embedthumbnail",
+      "bases": [
+        "FFmpegPostProcessor"
+      ]
+    },
+    {
+      "class": "ExecPP",
+      "module": "yt_dlp.postprocessor.exec",
+      "bases": [
+        "PostProcessor"
+      ]
+    },
+    {
+      "class": "ExecAfterDownloadPP",
+      "module": "yt_dlp.postprocessor.exec",
+      "bases": [
+        "ExecPP"
+      ]
+    },
+    {
+      "class": "FFmpegExtractAudioPP",
+      "module": "yt_dlp.postprocessor.ffmpeg",
+      "bases": [
+        "FFmpegPostProcessor"
+      ]
+    },
+    {
+      "class": "FFmpegVideoConvertorPP",
+      "module": "yt_dlp.postprocessor.ffmpeg",
+      "bases": [
+        "FFmpegPostProcessor"
+      ]
+    },
+    {
+      "class": "FFmpegVideoRemuxerPP",
+      "module": "yt_dlp.postprocessor.ffmpeg",
+      "bases": [
+        "FFmpegVideoConvertorPP"
+      ]
+    },
+    {
+      "class": "FFmpegEmbedSubtitlePP",
+      "module": "yt_dlp.postprocessor.ffmpeg",
+      "bases": [
+        "FFmpegPostProcessor"
+      ]
+    },
+    {
+      "class": "FFmpegMetadataPP",
+      "module": "yt_dlp.postprocessor.ffmpeg",
+      "bases": [
+        "FFmpegPostProcessor"
+      ]
+    },
+    {
+      "class": "FFmpegMergerPP",
+      "module": "yt_dlp.postprocessor.ffmpeg",
+      "bases": [
+        "FFmpegPostProcessor"
+      ]
+    },
+    {
+      "class": "FFmpegFixupStretchedPP",
+      "module": "yt_dlp.postprocessor.ffmpeg",
+      "bases": [
+        "FFmpegFixupPostProcessor"
+      ]
+    },
+    {
+      "class": "FFmpegFixupM4aPP",
+      "module": "yt_dlp.postprocessor.ffmpeg",
+      "bases": [
+        "FFmpegFixupPostProcessor"
+      ]
+    },
+    {
+      "class": "FFmpegFixupM3u8PP",
+      "module": "yt_dlp.postprocessor.ffmpeg",
+      "bases": [
+        "FFmpegFixupPostProcessor"
+      ]
+    },
+    {
+      "class": "FFmpegFixupTimestampPP",
+      "module": "yt_dlp.postprocessor.ffmpeg",
+      "bases": [
+        "FFmpegFixupPostProcessor"
+      ]
+    },
+    {
+      "class": "FFmpegCopyStreamPP",
+      "module": "yt_dlp.postprocessor.ffmpeg",
+      "bases": [
+        "FFmpegFixupPostProcessor"
+      ]
+    },
+    {
+      "class": "FFmpegFixupDurationPP",
+      "module": "yt_dlp.postprocessor.ffmpeg",
+      "bases": [
+        "FFmpegCopyStreamPP"
+      ]
+    },
+    {
+      "class": "FFmpegFixupDuplicateMoovPP",
+      "module": "yt_dlp.postprocessor.ffmpeg",
+      "bases": [
+        "FFmpegCopyStreamPP"
+      ]
+    },
+    {
+      "class": "FFmpegSubtitlesConvertorPP",
+      "module": "yt_dlp.postprocessor.ffmpeg",
+      "bases": [
+        "FFmpegPostProcessor"
+      ]
+    },
+    {
+      "class": "FFmpegSplitChaptersPP",
+      "module": "yt_dlp.postprocessor.ffmpeg",
+      "bases": [
+        "FFmpegPostProcessor"
+      ]
+    },
+    {
+      "class": "FFmpegThumbnailsConvertorPP",
+      "module": "yt_dlp.postprocessor.ffmpeg",
+      "bases": [
+        "FFmpegPostProcessor"
+      ]
+    },
+    {
+      "class": "FFmpegConcatPP",
+      "module": "yt_dlp.postprocessor.ffmpeg",
+      "bases": [
+        "FFmpegPostProcessor"
+      ]
+    },
+    {
+      "class": "MetadataParserPP",
+      "module": "yt_dlp.postprocessor.metadataparser",
+      "bases": [
+        "PostProcessor"
+      ]
+    },
+    {
+      "class": "MetadataFromFieldPP",
+      "module": "yt_dlp.postprocessor.metadataparser",
+      "bases": [
+        "MetadataParserPP"
+      ]
+    },
+    {
+      "class": "MetadataFromTitlePP",
+      "module": "yt_dlp.postprocessor.metadataparser",
+      "bases": [
+        "MetadataParserPP"
+      ]
+    },
+    {
+      "class": "ModifyChaptersPP",
+      "module": "yt_dlp.postprocessor.modify_chapters",
+      "bases": [
+        "FFmpegPostProcessor"
+      ]
+    },
+    {
+      "class": "MoveFilesAfterDownloadPP",
+      "module": "yt_dlp.postprocessor.movefilesafterdownload",
+      "bases": [
+        "PostProcessor"
+      ]
+    },
+    {
+      "class": "SponsorBlockPP",
+      "module": "yt_dlp.postprocessor.sponsorblock",
+      "bases": [
+        "FFmpegPostProcessor"
+      ]
+    },
+    {
+      "class": "XAttrMetadataPP",
+      "module": "yt_dlp.postprocessor.xattrpp",
+      "bases": [
+        "PostProcessor"
+      ]
+    }
+  ],
+  "registered_postprocessors": [
+    "EmbedThumbnailPP",
+    "ExecAfterDownloadPP",
+    "ExecPP",
+    "FFmpegConcatPP",
+    "FFmpegCopyStreamPP",
+    "FFmpegEmbedSubtitlePP",
+    "FFmpegExtractAudioPP",
+    "FFmpegFixupDuplicateMoovPP",
+    "FFmpegFixupDurationPP",
+    "FFmpegFixupM3u8PP",
+    "FFmpegFixupM4aPP",
+    "FFmpegFixupStretchedPP",
+    "FFmpegFixupTimestampPP",
+    "FFmpegMergerPP",
+    "FFmpegMetadataPP",
+    "FFmpegPostProcessor",
+    "FFmpegSplitChaptersPP",
+    "FFmpegSubtitlesConvertorPP",
+    "FFmpegThumbnailsConvertorPP",
+    "FFmpegVideoConvertorPP",
+    "FFmpegVideoRemuxerPP",
+    "MetadataFromFieldPP",
+    "MetadataFromTitlePP",
+    "MetadataParserPP",
+    "ModifyChaptersPP",
+    "MoveFilesAfterDownloadPP",
+    "PostProcessor",
+    "SponsorBlockPP",
+    "XAttrMetadataPP"
+  ],
+  "network_backends": [
+    "_curlcffi",
+    "_requests",
+    "_urllib",
+    "_websockets"
+  ]
+}

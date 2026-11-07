@@ -1,0 +1,44 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "omni-dlp"
+version = "0.1.0a1"
+description = "Media-neutral downloads with an independent core and an explicit yt-dlp migration bridge"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [{name = "10xCatDad"}]
+dependencies = []
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Programming Language :: Python :: 3",
+  "Topic :: Internet :: WWW/HTTP",
+]
+
+[project.optional-dependencies]
+compat = ["yt-dlp>=2026.3.17"]
+dev = ["pytest>=8", "ruff>=0.11", "build>=1.2"]
+
+[project.scripts]
+omni-dlp = "omni_dlp.cli:main"
+
+[project.urls]
+Repository = "https://github.com/10xCatDad/OMNI-DLP"
+Issues = "https://github.com/10xCatDad/OMNI-DLP/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/omni_dlp"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 110
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]

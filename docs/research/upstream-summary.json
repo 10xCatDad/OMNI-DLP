@@ -1,0 +1,48 @@
+{
+  "provenance": {
+    "repository": "https://github.com/yt-dlp/yt-dlp",
+    "commit": "412e7f0a4b0588fe884a02b344ac66a06538475b",
+    "commit_time": "2026-11-04T07:16:26Z",
+    "captured_at": "2026-11-07T23:22:23.241576+00:00",
+    "source_tree_clean": true,
+    "method": "Upstream parser/registry introspection and Python AST; no live site tests",
+    "source_sha256": {
+      "README.md": "6adba80a892aee34940550ee8d7085041afca6140b7ac56d6414f1e6eb484bfe",
+      "supportedsites.md": "cb2590beb7c81dbd607452445706615c2d8b04002045f01d9b12bedd71ca7fa4",
+      "yt_dlp/options.py": "3c4f75696a3c7a2528c5bcec38bed4919469f00a6e4e401026ca8b60bb6971f5"
+    },
+    "scope": "All option declarations and registered extractor classes in this commit; all top-level downloader and postprocessor classes with FD/PP suffixes. Not every implicit behavior, metadata field, plugin, historical option, or possible URL."
+  },
+  "counts": {
+    "option_declarations": 323,
+    "option_spellings": 394,
+    "hidden_option_declarations": 73,
+    "option_groups": {
+      "Video Format Options": 21,
+      "Post-Processing Options": 40,
+      "Workarounds": 12,
+      "Video Selection": 28,
+      "General Options": 35,
+      "Subtitle Options": 8,
+      "Authentication Options": 14,
+      "Filesystem Options": 40,
+      "Download Options": 28,
+      "Hidden / deprecated root options": 31,
+      "Verbosity and Simulation Options": 33,
+      "Network Options": 8,
+      "Extractor Options": 6,
+      "Geo-restriction": 6,
+      "Thumbnail Options": 4,
+      "SponsorBlock Options": 5,
+      "Internet Shortcut Options": 4
+    },
+    "registered_extractors": 1754,
+    "extractors_marked_broken": 136,
+    "hidden_extractor_handlers": 20,
+    "documented_site_entries": 1734,
+    "documented_site_entries_marked_broken": 136,
+    "downloader_classes": 22,
+    "protocol_dispatch_entries": 17,
+    "registered_postprocessor_classes": 29
+  }
+}

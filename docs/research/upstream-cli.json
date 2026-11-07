@@ -1,0 +1,4944 @@
+{
+  "provenance": {
+    "repository": "https://github.com/yt-dlp/yt-dlp",
+    "commit": "412e7f0a4b0588fe884a02b344ac66a06538475b",
+    "commit_time": "2026-11-04T07:16:26Z",
+    "captured_at": "2026-11-07T23:22:23.241576+00:00",
+    "source_tree_clean": true,
+    "method": "Upstream parser/registry introspection and Python AST; no live site tests",
+    "source_sha256": {
+      "README.md": "6adba80a892aee34940550ee8d7085041afca6140b7ac56d6414f1e6eb484bfe",
+      "supportedsites.md": "cb2590beb7c81dbd607452445706615c2d8b04002045f01d9b12bedd71ca7fa4",
+      "yt_dlp/options.py": "3c4f75696a3c7a2528c5bcec38bed4919469f00a6e4e401026ca8b60bb6971f5"
+    },
+    "scope": "All option declarations and registered extractor classes in this commit; all top-level downloader and postprocessor classes with FD/PP suffixes. Not every implicit behavior, metadata field, plugin, historical option, or possible URL."
+  },
+  "options": [
+    {
+      "names": [
+        "--format-sort-force",
+        "--S-force"
+      ],
+      "group": "Video Format Options",
+      "destination": "format_sort_force",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": "FORMAT",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--embed-chapters",
+        "--add-chapters"
+      ],
+      "group": "Post-Processing Options",
+      "destination": "addchapters",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--add-headers"
+      ],
+      "group": "Workarounds",
+      "destination": "headers",
+      "action": "callback",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "FIELD:VALUE",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--embed-metadata",
+        "--add-metadata"
+      ],
+      "group": "Post-Processing Options",
+      "destination": "addmetadata",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--age-limit"
+      ],
+      "group": "Video Selection",
+      "destination": "age_limit",
+      "action": "store",
+      "type": "int",
+      "nargs": 1,
+      "metavar": "YEARS",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--alias"
+      ],
+      "group": "General Options",
+      "destination": "_",
+      "action": "callback",
+      "type": "string",
+      "nargs": 2,
+      "metavar": "ALIASES OPTIONS",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--all-formats"
+      ],
+      "group": "Video Format Options",
+      "destination": "format",
+      "action": "store_const",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--all-subs"
+      ],
+      "group": "Subtitle Options",
+      "destination": "allsubtitles",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--allow-unplayable-formats"
+      ],
+      "group": "Video Format Options",
+      "destination": "allow_unplayable_formats",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--ap-list-mso"
+      ],
+      "group": "Authentication Options",
+      "destination": "ap_list_mso",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--ap-mso"
+      ],
+      "group": "Authentication Options",
+      "destination": "ap_mso",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "MSO",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--ap-password"
+      ],
+      "group": "Authentication Options",
+      "destination": "ap_password",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "PASSWORD",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--ap-username"
+      ],
+      "group": "Authentication Options",
+      "destination": "ap_username",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "USERNAME",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--audio-format"
+      ],
+      "group": "Post-Processing Options",
+      "destination": "audioformat",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "FORMAT",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--audio-multistreams"
+      ],
+      "group": "Video Format Options",
+      "destination": "allow_multiple_audio_streams",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--audio-quality"
+      ],
+      "group": "Post-Processing Options",
+      "destination": "audioquality",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "QUALITY",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--autonumber-size"
+      ],
+      "group": "Filesystem Options",
+      "destination": "autonumber_size",
+      "action": "store",
+      "type": "int",
+      "nargs": 1,
+      "metavar": "NUMBER",
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--autonumber-start"
+      ],
+      "group": "Filesystem Options",
+      "destination": "autonumber_start",
+      "action": "store",
+      "type": "int",
+      "nargs": 1,
+      "metavar": "NUMBER",
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "-a",
+        "--batch-file"
+      ],
+      "group": "Filesystem Options",
+      "destination": "batchfile",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "FILE",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--bidi-workaround"
+      ],
+      "group": "Workarounds",
+      "destination": "bidi_workaround",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--break-match-filters"
+      ],
+      "group": "Video Selection",
+      "destination": "breaking_match_filter",
+      "action": "append",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "FILTER",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--break-on-existing"
+      ],
+      "group": "Video Selection",
+      "destination": "break_on_existing",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--break-on-reject"
+      ],
+      "group": "Video Selection",
+      "destination": "break_on_reject",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--break-per-input"
+      ],
+      "group": "Video Selection",
+      "destination": "break_per_url",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--buffer-size"
+      ],
+      "group": "Download Options",
+      "destination": "buffersize",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "SIZE",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--cache-dir"
+      ],
+      "group": "Filesystem Options",
+      "destination": "cachedir",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "DIR",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--call-home"
+      ],
+      "group": "Hidden / deprecated root options",
+      "destination": null,
+      "action": "callback",
+      "type": null,
+      "nargs": 1,
+      "metavar": null,
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--check-all-formats"
+      ],
+      "group": "Video Format Options",
+      "destination": "check_formats",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--check-formats"
+      ],
+      "group": "Video Format Options",
+      "destination": "check_formats",
+      "action": "store_const",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--clean-info-json",
+        "--clean-infojson"
+      ],
+      "group": "Filesystem Options",
+      "destination": "clean_infojson",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--client-certificate"
+      ],
+      "group": "Authentication Options",
+      "destination": "client_certificate",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "CERTFILE",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--client-certificate-key"
+      ],
+      "group": "Authentication Options",
+      "destination": "client_certificate_key",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "KEYFILE",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--client-certificate-password"
+      ],
+      "group": "Authentication Options",
+      "destination": "client_certificate_password",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "PASSWORD",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--cn-verification-proxy"
+      ],
+      "group": "Hidden / deprecated root options",
+      "destination": "_",
+      "action": "callback",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "ARG",
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--color"
+      ],
+      "group": "General Options",
+      "destination": "color",
+      "action": "callback",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "[STREAM:]POLICY",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--compat-options"
+      ],
+      "group": "General Options",
+      "destination": "compat_opts",
+      "action": "callback",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "OPTS",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--concat-playlist"
+      ],
+      "group": "Post-Processing Options",
+      "destination": "concat_playlist",
+      "action": "store",
+      "type": "choice",
+      "nargs": 1,
+      "metavar": "POLICY",
+      "choices": [
+        "never",
+        "always",
+        "multi_video"
+      ],
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "-N",
+        "--concurrent-fragments"
+      ],
+      "group": "Download Options",
+      "destination": "concurrent_fragment_downloads",
+      "action": "store",
+      "type": "int",
+      "nargs": 1,
+      "metavar": "N",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--config-locations"
+      ],
+      "group": "General Options",
+      "destination": "config_locations",
+      "action": "append",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "PATH",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--console-title"
+      ],
+      "group": "Verbosity and Simulation Options",
+      "destination": "consoletitle",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "-c",
+        "--continue"
+      ],
+      "group": "Filesystem Options",
+      "destination": "continue_dl",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--convert-subs",
+        "--convert-sub",
+        "--convert-subtitles"
+      ],
+      "group": "Post-Processing Options",
+      "destination": "convertsubtitles",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "FORMAT",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--convert-thumbnails"
+      ],
+      "group": "Post-Processing Options",
+      "destination": "convertthumbnails",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "FORMAT",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--cookies"
+      ],
+      "group": "Filesystem Options",
+      "destination": "cookiefile",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "FILE",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--cookies-from-browser"
+      ],
+      "group": "Filesystem Options",
+      "destination": "cookiesfrombrowser",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "BROWSER[+KEYRING][:PROFILE][::CONTAINER]",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--date"
+      ],
+      "group": "Video Selection",
+      "destination": "date",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "DATE",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--dateafter"
+      ],
+      "group": "Video Selection",
+      "destination": "dateafter",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "DATE",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--datebefore"
+      ],
+      "group": "Video Selection",
+      "destination": "datebefore",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "DATE",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--default-search"
+      ],
+      "group": "General Options",
+      "destination": "default_search",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "PREFIX",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--download-archive"
+      ],
+      "group": "Video Selection",
+      "destination": "download_archive",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "FILE",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--download-sections"
+      ],
+      "group": "Download Options",
+      "destination": "download_ranges",
+      "action": "append",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "REGEX",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "-j",
+        "--dump-json"
+      ],
+      "group": "Verbosity and Simulation Options",
+      "destination": "dumpjson",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--dump-pages"
+      ],
+      "group": "Verbosity and Simulation Options",
+      "destination": "dump_intermediate_pages",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "-J",
+        "--dump-single-json"
+      ],
+      "group": "Verbosity and Simulation Options",
+      "destination": "dump_single_json",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--dump-user-agent"
+      ],
+      "group": "Hidden / deprecated root options",
+      "destination": null,
+      "action": "callback",
+      "type": null,
+      "nargs": 1,
+      "metavar": null,
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--embed-info-json"
+      ],
+      "group": "Post-Processing Options",
+      "destination": "embed_infojson",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--embed-subs"
+      ],
+      "group": "Post-Processing Options",
+      "destination": "embedsubtitles",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--embed-thumbnail"
+      ],
+      "group": "Post-Processing Options",
+      "destination": "embedthumbnail",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--enable-file-urls"
+      ],
+      "group": "Network Options",
+      "destination": "enable_file_urls",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--encoding"
+      ],
+      "group": "Workarounds",
+      "destination": "encoding",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "ENCODING",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--exec"
+      ],
+      "group": "Post-Processing Options",
+      "destination": "exec_cmd",
+      "action": "callback",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "[WHEN:]CMD",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--exec-before-download"
+      ],
+      "group": "Post-Processing Options",
+      "destination": "exec_before_dl_cmd",
+      "action": "append",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "CMD",
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--downloader",
+        "--external-downloader"
+      ],
+      "group": "Download Options",
+      "destination": "external_downloader",
+      "action": "callback",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "[PROTO:]NAME",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--downloader-args",
+        "--external-downloader-args"
+      ],
+      "group": "Download Options",
+      "destination": "external_downloader_args",
+      "action": "callback",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "NAME:ARGS",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "-x",
+        "--extract-audio"
+      ],
+      "group": "Post-Processing Options",
+      "destination": "extractaudio",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--extractor-args"
+      ],
+      "group": "Extractor Options",
+      "destination": "extractor_args",
+      "action": "callback",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "IE_KEY:ARGS",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--extractor-descriptions"
+      ],
+      "group": "General Options",
+      "destination": "list_extractor_descriptions",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--extractor-retries"
+      ],
+      "group": "Extractor Options",
+      "destination": "extractor_retries",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "RETRIES",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--ffmpeg-location"
+      ],
+      "group": "Post-Processing Options",
+      "destination": "ffmpeg_location",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "PATH",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--file-access-retries"
+      ],
+      "group": "Download Options",
+      "destination": "file_access_retries",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "RETRIES",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--fixup"
+      ],
+      "group": "Post-Processing Options",
+      "destination": "fixup",
+      "action": "store",
+      "type": "choice",
+      "nargs": 1,
+      "metavar": "POLICY",
+      "choices": [
+        "never",
+        "ignore",
+        "warn",
+        "detect_or_warn",
+        "force"
+      ],
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--flat-playlist"
+      ],
+      "group": "General Options",
+      "destination": "extract_flat",
+      "action": "store_const",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--force-write-archive",
+        "--force-write-download-archive",
+        "--force-download-archive"
+      ],
+      "group": "Verbosity and Simulation Options",
+      "destination": "force_write_download_archive",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--force-generic-extractor"
+      ],
+      "group": "General Options",
+      "destination": "force_generic_extractor",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "-4",
+        "--force-ipv4"
+      ],
+      "group": "Network Options",
+      "destination": "source_address",
+      "action": "store_const",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "-6",
+        "--force-ipv6"
+      ],
+      "group": "Network Options",
+      "destination": "source_address",
+      "action": "store_const",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--force-keyframes-at-cuts"
+      ],
+      "group": "Post-Processing Options",
+      "destination": "force_keyframes_at_cuts",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "-f",
+        "--format"
+      ],
+      "group": "Video Format Options",
+      "destination": "format",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "FORMAT",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "-S",
+        "--format-sort"
+      ],
+      "group": "Video Format Options",
+      "destination": "format_sort",
+      "action": "callback",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "SORTORDER",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--format-sort-reset"
+      ],
+      "group": "Video Format Options",
+      "destination": "format_sort",
+      "action": "store_const",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--fragment-retries"
+      ],
+      "group": "Download Options",
+      "destination": "fragment_retries",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "RETRIES",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--geo-bypass"
+      ],
+      "group": "Geo-restriction",
+      "destination": "geo_bypass",
+      "action": "store_const",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--geo-bypass-country"
+      ],
+      "group": "Geo-restriction",
+      "destination": "geo_bypass",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "CODE",
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--geo-bypass-ip-block"
+      ],
+      "group": "Geo-restriction",
+      "destination": "geo_bypass",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "IP_BLOCK",
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--geo-verification-proxy"
+      ],
+      "group": "Geo-restriction",
+      "destination": "geo_verification_proxy",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "URL",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--write-comments",
+        "--get-comments"
+      ],
+      "group": "Filesystem Options",
+      "destination": "getcomments",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--get-description"
+      ],
+      "group": "Verbosity and Simulation Options",
+      "destination": "getdescription",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--get-duration"
+      ],
+      "group": "Verbosity and Simulation Options",
+      "destination": "getduration",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--get-filename"
+      ],
+      "group": "Verbosity and Simulation Options",
+      "destination": "getfilename",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--get-format"
+      ],
+      "group": "Verbosity and Simulation Options",
+      "destination": "getformat",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--get-id"
+      ],
+      "group": "Verbosity and Simulation Options",
+      "destination": "getid",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--get-thumbnail"
+      ],
+      "group": "Verbosity and Simulation Options",
+      "destination": "getthumbnail",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "-e",
+        "--get-title"
+      ],
+      "group": "Verbosity and Simulation Options",
+      "destination": "gettitle",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "-g",
+        "--get-url"
+      ],
+      "group": "Verbosity and Simulation Options",
+      "destination": "geturl",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "-h",
+        "--help"
+      ],
+      "group": "General Options",
+      "destination": "print_help",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--hls-prefer-ffmpeg"
+      ],
+      "group": "Download Options",
+      "destination": "hls_prefer_native",
+      "action": "store_false",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--hls-prefer-native"
+      ],
+      "group": "Download Options",
+      "destination": "hls_prefer_native",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--hls-split-discontinuity"
+      ],
+      "group": "Extractor Options",
+      "destination": "hls_split_discontinuity",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--hls-use-mpegts"
+      ],
+      "group": "Download Options",
+      "destination": "hls_use_mpegts",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--http-chunk-size"
+      ],
+      "group": "Download Options",
+      "destination": "http_chunk_size",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "SIZE",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--id"
+      ],
+      "group": "Filesystem Options",
+      "destination": "useid",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--use-extractors",
+        "--ies"
+      ],
+      "group": "General Options",
+      "destination": "allowed_extractors",
+      "action": "callback",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "NAMES",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "-i",
+        "--ignore-errors"
+      ],
+      "group": "General Options",
+      "destination": "ignoreerrors",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--ignore-no-formats-error"
+      ],
+      "group": "Verbosity and Simulation Options",
+      "destination": "ignore_no_formats_error",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--impersonate"
+      ],
+      "group": "Network Options",
+      "destination": "impersonate",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "CLIENT[:OS]",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--include-ads"
+      ],
+      "group": "Hidden / deprecated root options",
+      "destination": null,
+      "action": "callback",
+      "type": null,
+      "nargs": 1,
+      "metavar": null,
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--js-runtimes"
+      ],
+      "group": "General Options",
+      "destination": "js_runtimes",
+      "action": "callback",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "RUNTIME[:PATH]",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--keep-fragments"
+      ],
+      "group": "Download Options",
+      "destination": "keep_fragments",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "-k",
+        "--keep-video"
+      ],
+      "group": "Post-Processing Options",
+      "destination": "keepvideo",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--lazy-playlist"
+      ],
+      "group": "Download Options",
+      "destination": "lazy_playlist",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--legacy-server-connect"
+      ],
+      "group": "Workarounds",
+      "destination": "legacy_server_connect",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--list-extractors"
+      ],
+      "group": "General Options",
+      "destination": "list_extractors",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "-F",
+        "--list-formats"
+      ],
+      "group": "Video Format Options",
+      "destination": "listformats",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--list-formats-as-table"
+      ],
+      "group": "Video Format Options",
+      "destination": "listformats_table",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--list-impersonate-targets"
+      ],
+      "group": "Network Options",
+      "destination": "list_impersonate_targets",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--list-subs"
+      ],
+      "group": "Subtitle Options",
+      "destination": "listsubtitles",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--list-thumbnails"
+      ],
+      "group": "Thumbnail Options",
+      "destination": "list_thumbnails",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--live-from-start"
+      ],
+      "group": "General Options",
+      "destination": "live_from_start",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--load-info-json"
+      ],
+      "group": "Filesystem Options",
+      "destination": "load_info_filename",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "FILE",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--load-pages"
+      ],
+      "group": "Verbosity and Simulation Options",
+      "destination": "load_pages",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--mark-watched"
+      ],
+      "group": "General Options",
+      "destination": "mark_watched",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--match-filters"
+      ],
+      "group": "Video Selection",
+      "destination": "match_filter",
+      "action": "append",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "FILTER",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--match-title"
+      ],
+      "group": "Video Selection",
+      "destination": "matchtitle",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "REGEX",
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--max-downloads"
+      ],
+      "group": "Video Selection",
+      "destination": "max_downloads",
+      "action": "store",
+      "type": "int",
+      "nargs": 1,
+      "metavar": "NUMBER",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--max-filesize"
+      ],
+      "group": "Video Selection",
+      "destination": "max_filesize",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "SIZE",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--max-sleep-interval"
+      ],
+      "group": "Workarounds",
+      "destination": "max_sleep_interval",
+      "action": "store",
+      "type": "float",
+      "nargs": 1,
+      "metavar": "SECONDS",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--max-views"
+      ],
+      "group": "Video Selection",
+      "destination": "max_views",
+      "action": "store",
+      "type": "int",
+      "nargs": 1,
+      "metavar": "COUNT",
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--merge-output-format"
+      ],
+      "group": "Video Format Options",
+      "destination": "merge_output_format",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "FORMAT",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--metadata-from-title"
+      ],
+      "group": "Post-Processing Options",
+      "destination": "metafromtitle",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "FORMAT",
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--min-filesize"
+      ],
+      "group": "Video Selection",
+      "destination": "min_filesize",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "SIZE",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--sleep-interval",
+        "--min-sleep-interval"
+      ],
+      "group": "Workarounds",
+      "destination": "sleep_interval",
+      "action": "store",
+      "type": "float",
+      "nargs": 1,
+      "metavar": "SECONDS",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--min-views"
+      ],
+      "group": "Video Selection",
+      "destination": "min_views",
+      "action": "store",
+      "type": "int",
+      "nargs": 1,
+      "metavar": "COUNT",
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--mtime"
+      ],
+      "group": "Filesystem Options",
+      "destination": "updatetime",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "-n",
+        "--netrc"
+      ],
+      "group": "Authentication Options",
+      "destination": "usenetrc",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--netrc-cmd"
+      ],
+      "group": "Authentication Options",
+      "destination": "netrc_cmd",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "NETRC_CMD",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--netrc-location"
+      ],
+      "group": "Authentication Options",
+      "destination": "netrc_location",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "PATH",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--newline"
+      ],
+      "group": "Verbosity and Simulation Options",
+      "destination": "progress_with_newline",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-abort-on-error"
+      ],
+      "group": "General Options",
+      "destination": "ignoreerrors",
+      "action": "store_const",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--skip-unavailable-fragments",
+        "--no-abort-on-unavailable-fragments"
+      ],
+      "group": "Download Options",
+      "destination": "skip_unavailable_fragments",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-embed-chapters",
+        "--no-add-chapters"
+      ],
+      "group": "Post-Processing Options",
+      "destination": "addchapters",
+      "action": "store_false",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-embed-metadata",
+        "--no-add-metadata"
+      ],
+      "group": "Post-Processing Options",
+      "destination": "addmetadata",
+      "action": "store_false",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--ignore-dynamic-mpd",
+        "--no-allow-dynamic-mpd"
+      ],
+      "group": "Extractor Options",
+      "destination": "dynamic_mpd",
+      "action": "store_false",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-allow-unplayable-formats"
+      ],
+      "group": "Video Format Options",
+      "destination": "allow_unplayable_formats",
+      "action": "store_false",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-audio-multistreams"
+      ],
+      "group": "Video Format Options",
+      "destination": "allow_multiple_audio_streams",
+      "action": "store_false",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-batch-file"
+      ],
+      "group": "Filesystem Options",
+      "destination": "batchfile",
+      "action": "store_const",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-break-match-filters"
+      ],
+      "group": "Video Selection",
+      "destination": "breaking_match_filter",
+      "action": "store_const",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-break-on-existing"
+      ],
+      "group": "Video Selection",
+      "destination": "break_on_existing",
+      "action": "store_false",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-break-per-input"
+      ],
+      "group": "Video Selection",
+      "destination": "break_per_url",
+      "action": "store_false",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-cache-dir"
+      ],
+      "group": "Filesystem Options",
+      "destination": "cachedir",
+      "action": "store_false",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-call-home"
+      ],
+      "group": "Hidden / deprecated root options",
+      "destination": null,
+      "action": "callback",
+      "type": null,
+      "nargs": 1,
+      "metavar": null,
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-check-certificates"
+      ],
+      "group": "Workarounds",
+      "destination": "no_check_certificate",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-check-formats"
+      ],
+      "group": "Video Format Options",
+      "destination": "check_formats",
+      "action": "store_false",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-clean-info-json",
+        "--no-clean-infojson"
+      ],
+      "group": "Filesystem Options",
+      "destination": "clean_infojson",
+      "action": "store_false",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-colors",
+        "--no-colours"
+      ],
+      "group": "General Options",
+      "destination": "color",
+      "action": "store_const",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--ignore-config",
+        "--no-config"
+      ],
+      "group": "General Options",
+      "destination": "ignoreconfig",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-config-locations"
+      ],
+      "group": "General Options",
+      "destination": "config_locations",
+      "action": "store_const",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-continue"
+      ],
+      "group": "Filesystem Options",
+      "destination": "continue_dl",
+      "action": "store_false",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-cookies"
+      ],
+      "group": "Filesystem Options",
+      "destination": "cookiefile",
+      "action": "store_const",
+      "type": null,
+      "nargs": null,
+      "metavar": "FILE",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-cookies-from-browser"
+      ],
+      "group": "Filesystem Options",
+      "destination": "cookiesfrombrowser",
+      "action": "store_const",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--skip-download",
+        "--no-download"
+      ],
+      "group": "Verbosity and Simulation Options",
+      "destination": "skip_download",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-download-archive"
+      ],
+      "group": "Video Selection",
+      "destination": "download_archive",
+      "action": "store_const",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-embed-info-json"
+      ],
+      "group": "Post-Processing Options",
+      "destination": "embed_infojson",
+      "action": "store_false",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-embed-subs"
+      ],
+      "group": "Post-Processing Options",
+      "destination": "embedsubtitles",
+      "action": "store_false",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-embed-thumbnail"
+      ],
+      "group": "Post-Processing Options",
+      "destination": "embedthumbnail",
+      "action": "store_false",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-exec"
+      ],
+      "group": "Post-Processing Options",
+      "destination": "exec_cmd",
+      "action": "store_const",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-exec-before-download"
+      ],
+      "group": "Post-Processing Options",
+      "destination": "exec_before_dl_cmd",
+      "action": "store_const",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-flat-playlist"
+      ],
+      "group": "General Options",
+      "destination": "extract_flat",
+      "action": "store_false",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-force-keyframes-at-cuts"
+      ],
+      "group": "Post-Processing Options",
+      "destination": "force_keyframes_at_cuts",
+      "action": "store_false",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-force-overwrites"
+      ],
+      "group": "Filesystem Options",
+      "destination": "overwrites",
+      "action": "store_const",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-format-sort-force"
+      ],
+      "group": "Video Format Options",
+      "destination": "format_sort_force",
+      "action": "store_false",
+      "type": null,
+      "nargs": null,
+      "metavar": "FORMAT",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-geo-bypass"
+      ],
+      "group": "Geo-restriction",
+      "destination": "geo_bypass",
+      "action": "store_const",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-write-comments",
+        "--no-get-comments"
+      ],
+      "group": "Filesystem Options",
+      "destination": "getcomments",
+      "action": "store_false",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-hls-split-discontinuity"
+      ],
+      "group": "Extractor Options",
+      "destination": "hls_split_discontinuity",
+      "action": "store_false",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-hls-use-mpegts"
+      ],
+      "group": "Download Options",
+      "destination": "hls_use_mpegts",
+      "action": "store_false",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--allow-dynamic-mpd",
+        "--no-ignore-dynamic-mpd"
+      ],
+      "group": "Extractor Options",
+      "destination": "dynamic_mpd",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--abort-on-error",
+        "--no-ignore-errors"
+      ],
+      "group": "General Options",
+      "destination": "ignoreerrors",
+      "action": "store_false",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-ignore-no-formats-error"
+      ],
+      "group": "Verbosity and Simulation Options",
+      "destination": "ignore_no_formats_error",
+      "action": "store_false",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-include-ads"
+      ],
+      "group": "Hidden / deprecated root options",
+      "destination": null,
+      "action": "callback",
+      "type": null,
+      "nargs": 1,
+      "metavar": null,
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-js-runtimes"
+      ],
+      "group": "General Options",
+      "destination": "js_runtimes",
+      "action": "store_const",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-keep-fragments"
+      ],
+      "group": "Download Options",
+      "destination": "keep_fragments",
+      "action": "store_false",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-keep-video"
+      ],
+      "group": "Post-Processing Options",
+      "destination": "keepvideo",
+      "action": "store_false",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-lazy-playlist"
+      ],
+      "group": "Download Options",
+      "destination": "lazy_playlist",
+      "action": "store_false",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--list-formats-old",
+        "--no-list-formats-as-table"
+      ],
+      "group": "Video Format Options",
+      "destination": "listformats_table",
+      "action": "store_false",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-live-from-start"
+      ],
+      "group": "General Options",
+      "destination": "live_from_start",
+      "action": "store_false",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-mark-watched"
+      ],
+      "group": "General Options",
+      "destination": "mark_watched",
+      "action": "store_false",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-match-filters"
+      ],
+      "group": "Video Selection",
+      "destination": "match_filter",
+      "action": "store_const",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-mtime"
+      ],
+      "group": "Filesystem Options",
+      "destination": "updatetime",
+      "action": "store_false",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "-w",
+        "--no-overwrites"
+      ],
+      "group": "Filesystem Options",
+      "destination": "overwrites",
+      "action": "store_false",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-part"
+      ],
+      "group": "Filesystem Options",
+      "destination": "nopart",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-playlist"
+      ],
+      "group": "Video Selection",
+      "destination": "noplaylist",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-playlist-reverse"
+      ],
+      "group": "Download Options",
+      "destination": "playlist_reverse",
+      "action": "store_false",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-plugin-dirs"
+      ],
+      "group": "General Options",
+      "destination": "plugin_dirs",
+      "action": "store_const",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-post-overwrites"
+      ],
+      "group": "Post-Processing Options",
+      "destination": "nopostoverwrites",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-prefer-avconv"
+      ],
+      "group": "Hidden / deprecated root options",
+      "destination": null,
+      "action": "callback",
+      "type": null,
+      "nargs": 1,
+      "metavar": null,
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-prefer-ffmpeg"
+      ],
+      "group": "Hidden / deprecated root options",
+      "destination": null,
+      "action": "callback",
+      "type": null,
+      "nargs": 1,
+      "metavar": null,
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-prefer-free-formats"
+      ],
+      "group": "Video Format Options",
+      "destination": "prefer_free_formats",
+      "action": "store_false",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-progress"
+      ],
+      "group": "Verbosity and Simulation Options",
+      "destination": "noprogress",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-quiet"
+      ],
+      "group": "Verbosity and Simulation Options",
+      "destination": "quiet",
+      "action": "store_false",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-remote-components"
+      ],
+      "group": "General Options",
+      "destination": "remote_components",
+      "action": "store_const",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-remove-chapters"
+      ],
+      "group": "Post-Processing Options",
+      "destination": "remove_chapters",
+      "action": "store_const",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-resize-buffer"
+      ],
+      "group": "Download Options",
+      "destination": "noresizebuffer",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-restrict-filenames"
+      ],
+      "group": "Filesystem Options",
+      "destination": "restrictfilenames",
+      "action": "store_false",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-simulate"
+      ],
+      "group": "Verbosity and Simulation Options",
+      "destination": "simulate",
+      "action": "store_false",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--abort-on-unavailable-fragments",
+        "--no-skip-unavailable-fragments"
+      ],
+      "group": "Download Options",
+      "destination": "skip_unavailable_fragments",
+      "action": "store_false",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-split-chapters",
+        "--no-split-tracks"
+      ],
+      "group": "Post-Processing Options",
+      "destination": "split_chapters",
+      "action": "store_false",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-sponskrub"
+      ],
+      "group": "Hidden / deprecated root options",
+      "destination": null,
+      "action": "callback",
+      "type": null,
+      "nargs": 1,
+      "metavar": null,
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-sponskrub-cut"
+      ],
+      "group": "Hidden / deprecated root options",
+      "destination": null,
+      "action": "callback",
+      "type": null,
+      "nargs": 1,
+      "metavar": null,
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-sponskrub-force"
+      ],
+      "group": "Hidden / deprecated root options",
+      "destination": null,
+      "action": "callback",
+      "type": null,
+      "nargs": 1,
+      "metavar": null,
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-sponsorblock"
+      ],
+      "group": "SponsorBlock Options",
+      "destination": "no_sponsorblock",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-update"
+      ],
+      "group": "General Options",
+      "destination": "update_self",
+      "action": "store_false",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-video-multistreams"
+      ],
+      "group": "Video Format Options",
+      "destination": "allow_multiple_video_streams",
+      "action": "store_false",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-wait-for-video"
+      ],
+      "group": "General Options",
+      "destination": "wait_for_video",
+      "action": "store_const",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-warnings"
+      ],
+      "group": "Verbosity and Simulation Options",
+      "destination": "no_warnings",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-windows-filenames"
+      ],
+      "group": "Filesystem Options",
+      "destination": "windowsfilenames",
+      "action": "store_false",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-write-annotations"
+      ],
+      "group": "Hidden / deprecated root options",
+      "destination": null,
+      "action": "callback",
+      "type": null,
+      "nargs": 1,
+      "metavar": null,
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-write-auto-subs",
+        "--no-write-automatic-subs"
+      ],
+      "group": "Subtitle Options",
+      "destination": "writeautomaticsub",
+      "action": "store_false",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-write-description"
+      ],
+      "group": "Filesystem Options",
+      "destination": "writedescription",
+      "action": "store_false",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-write-info-json"
+      ],
+      "group": "Filesystem Options",
+      "destination": "writeinfojson",
+      "action": "store_false",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-write-playlist-metafiles"
+      ],
+      "group": "Filesystem Options",
+      "destination": "allow_playlist_files",
+      "action": "store_false",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-write-subs",
+        "--no-write-srt"
+      ],
+      "group": "Subtitle Options",
+      "destination": "writesubtitles",
+      "action": "store_false",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-write-thumbnail"
+      ],
+      "group": "Thumbnail Options",
+      "destination": "writethumbnail",
+      "action": "store_false",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-youtube-include-dash-manifest"
+      ],
+      "group": "Hidden / deprecated root options",
+      "destination": null,
+      "action": "callback",
+      "type": null,
+      "nargs": 1,
+      "metavar": null,
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-youtube-include-hls-manifest"
+      ],
+      "group": "Hidden / deprecated root options",
+      "destination": null,
+      "action": "callback",
+      "type": null,
+      "nargs": 1,
+      "metavar": null,
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-youtube-skip-dash-manifest"
+      ],
+      "group": "Hidden / deprecated root options",
+      "destination": null,
+      "action": "callback",
+      "type": null,
+      "nargs": 1,
+      "metavar": null,
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--no-youtube-skip-hls-manifest"
+      ],
+      "group": "Hidden / deprecated root options",
+      "destination": null,
+      "action": "callback",
+      "type": null,
+      "nargs": 1,
+      "metavar": null,
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "-o",
+        "--output"
+      ],
+      "group": "Filesystem Options",
+      "destination": "outtmpl",
+      "action": "callback",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "[TYPES:]TEMPLATE",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--output-na-placeholder"
+      ],
+      "group": "Filesystem Options",
+      "destination": "outtmpl_na_placeholder",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "TEXT",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--parse-metadata"
+      ],
+      "group": "Post-Processing Options",
+      "destination": "parse_metadata",
+      "action": "callback",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "[WHEN:]FROM:TO",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--part"
+      ],
+      "group": "Filesystem Options",
+      "destination": "nopart",
+      "action": "store_false",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "-p",
+        "--password"
+      ],
+      "group": "Authentication Options",
+      "destination": "password",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "PASSWORD",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "-P",
+        "--paths"
+      ],
+      "group": "Filesystem Options",
+      "destination": "paths",
+      "action": "callback",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "[TYPES:]PATH",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--playlist-end"
+      ],
+      "group": "Video Selection",
+      "destination": "playlistend",
+      "action": "store",
+      "type": "int",
+      "nargs": 1,
+      "metavar": "NUMBER",
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "-I",
+        "--playlist-items"
+      ],
+      "group": "Video Selection",
+      "destination": "playlist_items",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "ITEM_SPEC",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--playlist-random"
+      ],
+      "group": "Download Options",
+      "destination": "playlist_random",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--playlist-reverse"
+      ],
+      "group": "Download Options",
+      "destination": "playlist_reverse",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--playlist-start"
+      ],
+      "group": "Video Selection",
+      "destination": "playliststart",
+      "action": "store",
+      "type": "int",
+      "nargs": 1,
+      "metavar": "NUMBER",
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--plugin-dirs"
+      ],
+      "group": "General Options",
+      "destination": "plugin_dirs",
+      "action": "callback",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "DIR",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--post-overwrites"
+      ],
+      "group": "Post-Processing Options",
+      "destination": "nopostoverwrites",
+      "action": "store_false",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--postprocessor-args",
+        "--ppa"
+      ],
+      "group": "Post-Processing Options",
+      "destination": "postprocessor_args",
+      "action": "callback",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "NAME:ARGS",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--prefer-avconv"
+      ],
+      "group": "Hidden / deprecated root options",
+      "destination": null,
+      "action": "callback",
+      "type": null,
+      "nargs": 1,
+      "metavar": null,
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--prefer-ffmpeg"
+      ],
+      "group": "Hidden / deprecated root options",
+      "destination": null,
+      "action": "callback",
+      "type": null,
+      "nargs": 1,
+      "metavar": null,
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--prefer-free-formats"
+      ],
+      "group": "Video Format Options",
+      "destination": "prefer_free_formats",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--prefer-insecure",
+        "--prefer-unsecure"
+      ],
+      "group": "Workarounds",
+      "destination": "prefer_insecure",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "-t",
+        "--preset-alias"
+      ],
+      "group": "General Options",
+      "destination": "_",
+      "action": "callback",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "PRESET",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "-O",
+        "--print"
+      ],
+      "group": "Verbosity and Simulation Options",
+      "destination": "forceprint",
+      "action": "callback",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "[WHEN:]TEMPLATE",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--print-json"
+      ],
+      "group": "Verbosity and Simulation Options",
+      "destination": "print_json",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--print-to-file"
+      ],
+      "group": "Verbosity and Simulation Options",
+      "destination": "print_to_file",
+      "action": "callback",
+      "type": "string",
+      "nargs": 2,
+      "metavar": "[WHEN:]TEMPLATE FILE",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--print-traffic"
+      ],
+      "group": "Verbosity and Simulation Options",
+      "destination": "debug_printtraffic",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--progress"
+      ],
+      "group": "Verbosity and Simulation Options",
+      "destination": "noprogress",
+      "action": "store_false",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--progress-delta"
+      ],
+      "group": "Verbosity and Simulation Options",
+      "destination": "progress_delta",
+      "action": "store",
+      "type": "float",
+      "nargs": 1,
+      "metavar": "SECONDS",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--progress-template"
+      ],
+      "group": "Verbosity and Simulation Options",
+      "destination": "progress_template",
+      "action": "callback",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "[TYPES:]TEMPLATE",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--proxy"
+      ],
+      "group": "Network Options",
+      "destination": "proxy",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "URL",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "-q",
+        "--quiet"
+      ],
+      "group": "Verbosity and Simulation Options",
+      "destination": "quiet",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "-r",
+        "--limit-rate",
+        "--rate-limit"
+      ],
+      "group": "Download Options",
+      "destination": "ratelimit",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "RATE",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--recode-video"
+      ],
+      "group": "Post-Processing Options",
+      "destination": "recodevideo",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "FORMAT",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--referer"
+      ],
+      "group": "Workarounds",
+      "destination": "referer",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "URL",
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--reject-title"
+      ],
+      "group": "Video Selection",
+      "destination": "rejecttitle",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "REGEX",
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--remote-components"
+      ],
+      "group": "General Options",
+      "destination": "remote_components",
+      "action": "callback",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "COMPONENT",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--remove-chapters"
+      ],
+      "group": "Post-Processing Options",
+      "destination": "remove_chapters",
+      "action": "append",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "REGEX",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--remux-video"
+      ],
+      "group": "Post-Processing Options",
+      "destination": "remuxvideo",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "FORMAT",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--replace-in-metadata"
+      ],
+      "group": "Post-Processing Options",
+      "destination": "parse_metadata",
+      "action": "callback",
+      "type": "string",
+      "nargs": 3,
+      "metavar": "[WHEN:]FIELDS REGEX REPLACE",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--resize-buffer"
+      ],
+      "group": "Download Options",
+      "destination": "noresizebuffer",
+      "action": "store_false",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--restrict-filenames"
+      ],
+      "group": "Filesystem Options",
+      "destination": "restrictfilenames",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "-R",
+        "--retries"
+      ],
+      "group": "Download Options",
+      "destination": "retries",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "RETRIES",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--retry-sleep"
+      ],
+      "group": "Download Options",
+      "destination": "retry_sleep",
+      "action": "callback",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "[TYPE:]EXPR",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--rm-cache-dir"
+      ],
+      "group": "Filesystem Options",
+      "destination": "rm_cachedir",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "-s",
+        "--simulate"
+      ],
+      "group": "Verbosity and Simulation Options",
+      "destination": "simulate",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--skip-playlist-after-errors"
+      ],
+      "group": "Video Selection",
+      "destination": "skip_playlist_after_errors",
+      "action": "store",
+      "type": "int",
+      "nargs": 1,
+      "metavar": "N",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--sleep-requests"
+      ],
+      "group": "Workarounds",
+      "destination": "sleep_interval_requests",
+      "action": "store",
+      "type": "float",
+      "nargs": 1,
+      "metavar": "SECONDS",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--sleep-subtitles"
+      ],
+      "group": "Workarounds",
+      "destination": "sleep_interval_subtitles",
+      "action": "store",
+      "type": "float",
+      "nargs": 1,
+      "metavar": "SECONDS",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--socket-timeout"
+      ],
+      "group": "Network Options",
+      "destination": "socket_timeout",
+      "action": "store",
+      "type": "float",
+      "nargs": 1,
+      "metavar": "SECONDS",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--source-address"
+      ],
+      "group": "Network Options",
+      "destination": "source_address",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "IP",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--split-chapters",
+        "--split-tracks"
+      ],
+      "group": "Post-Processing Options",
+      "destination": "split_chapters",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--sponskrub"
+      ],
+      "group": "Hidden / deprecated root options",
+      "destination": null,
+      "action": "callback",
+      "type": null,
+      "nargs": 1,
+      "metavar": null,
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--sponskrub-args"
+      ],
+      "group": "Hidden / deprecated root options",
+      "destination": "_",
+      "action": "callback",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "ARG",
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--sponskrub-cut"
+      ],
+      "group": "Hidden / deprecated root options",
+      "destination": null,
+      "action": "callback",
+      "type": null,
+      "nargs": 1,
+      "metavar": null,
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--sponskrub-force"
+      ],
+      "group": "Hidden / deprecated root options",
+      "destination": null,
+      "action": "callback",
+      "type": null,
+      "nargs": 1,
+      "metavar": null,
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--sponskrub-location"
+      ],
+      "group": "Hidden / deprecated root options",
+      "destination": "_",
+      "action": "callback",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "ARG",
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--sponsorblock-api"
+      ],
+      "group": "SponsorBlock Options",
+      "destination": "sponsorblock_api",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "URL",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--sponsorblock-chapter-title"
+      ],
+      "group": "SponsorBlock Options",
+      "destination": "sponsorblock_chapter_title",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "TEMPLATE",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--sponsorblock-mark"
+      ],
+      "group": "SponsorBlock Options",
+      "destination": "sponsorblock_mark",
+      "action": "callback",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "CATS",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--sponsorblock-remove"
+      ],
+      "group": "SponsorBlock Options",
+      "destination": "sponsorblock_remove",
+      "action": "callback",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "CATS",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--sub-langs",
+        "--srt-langs"
+      ],
+      "group": "Subtitle Options",
+      "destination": "subtitleslangs",
+      "action": "callback",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "LANGS",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--sub-format"
+      ],
+      "group": "Subtitle Options",
+      "destination": "subtitlesformat",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "FORMAT",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--test"
+      ],
+      "group": "Download Options",
+      "destination": "test",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--throttled-rate"
+      ],
+      "group": "Download Options",
+      "destination": "throttledratelimit",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "RATE",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--trim-filenames",
+        "--trim-file-names"
+      ],
+      "group": "Filesystem Options",
+      "destination": "trim_file_name",
+      "action": "store",
+      "type": "int",
+      "nargs": 1,
+      "metavar": "LENGTH",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "-2",
+        "--twofactor"
+      ],
+      "group": "Authentication Options",
+      "destination": "twofactor",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "TWOFACTOR",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "-U",
+        "--update"
+      ],
+      "group": "General Options",
+      "destination": "update_self",
+      "action": "store_const",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--update-to"
+      ],
+      "group": "General Options",
+      "destination": "update_self",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "[CHANNEL]@[TAG]",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--use-postprocessor"
+      ],
+      "group": "Post-Processing Options",
+      "destination": "add_postprocessors",
+      "action": "callback",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "NAME[:ARGS]",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--user-agent"
+      ],
+      "group": "Workarounds",
+      "destination": "user_agent",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "UA",
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "-u",
+        "--username"
+      ],
+      "group": "Authentication Options",
+      "destination": "username",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "USERNAME",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "-v",
+        "--verbose"
+      ],
+      "group": "Verbosity and Simulation Options",
+      "destination": "verbose",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--version"
+      ],
+      "group": "General Options",
+      "destination": null,
+      "action": "version",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--video-multistreams"
+      ],
+      "group": "Video Format Options",
+      "destination": "allow_multiple_video_streams",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--video-password"
+      ],
+      "group": "Authentication Options",
+      "destination": "videopassword",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "PASSWORD",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--wait-for-video"
+      ],
+      "group": "General Options",
+      "destination": "wait_for_video",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "MIN[-MAX]",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--windows-filenames"
+      ],
+      "group": "Filesystem Options",
+      "destination": "windowsfilenames",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--write-all-thumbnails"
+      ],
+      "group": "Thumbnail Options",
+      "destination": "writethumbnail",
+      "action": "store_const",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--write-annotations"
+      ],
+      "group": "Hidden / deprecated root options",
+      "destination": null,
+      "action": "callback",
+      "type": null,
+      "nargs": 1,
+      "metavar": null,
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--write-auto-subs",
+        "--write-automatic-subs"
+      ],
+      "group": "Subtitle Options",
+      "destination": "writeautomaticsub",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--write-description"
+      ],
+      "group": "Filesystem Options",
+      "destination": "writedescription",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--write-desktop-link"
+      ],
+      "group": "Internet Shortcut Options",
+      "destination": "writedesktoplink",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--write-info-json"
+      ],
+      "group": "Filesystem Options",
+      "destination": "writeinfojson",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--write-link"
+      ],
+      "group": "Internet Shortcut Options",
+      "destination": "writelink",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--write-pages"
+      ],
+      "group": "Verbosity and Simulation Options",
+      "destination": "write_pages",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--write-playlist-metafiles"
+      ],
+      "group": "Filesystem Options",
+      "destination": "allow_playlist_files",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--write-subs",
+        "--write-srt"
+      ],
+      "group": "Subtitle Options",
+      "destination": "writesubtitles",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--write-thumbnail"
+      ],
+      "group": "Thumbnail Options",
+      "destination": "writethumbnail",
+      "action": "callback",
+      "type": null,
+      "nargs": 1,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--write-url-link"
+      ],
+      "group": "Internet Shortcut Options",
+      "destination": "writeurllink",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--write-webloc-link"
+      ],
+      "group": "Internet Shortcut Options",
+      "destination": "writewebloclink",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--xattrs",
+        "--xattr"
+      ],
+      "group": "Post-Processing Options",
+      "destination": "xattrs",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--xattr-set-filesize"
+      ],
+      "group": "Hidden / deprecated root options",
+      "destination": null,
+      "action": "callback",
+      "type": null,
+      "nargs": 1,
+      "metavar": null,
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--xff"
+      ],
+      "group": "Geo-restriction",
+      "destination": "geo_bypass",
+      "action": "store",
+      "type": "string",
+      "nargs": 1,
+      "metavar": "VALUE",
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--force-overwrites",
+        "--yes-overwrites"
+      ],
+      "group": "Filesystem Options",
+      "destination": "overwrites",
+      "action": "store_true",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--yes-playlist"
+      ],
+      "group": "Video Selection",
+      "destination": "noplaylist",
+      "action": "store_false",
+      "type": null,
+      "nargs": null,
+      "metavar": null,
+      "choices": null,
+      "hidden": false,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--youtube-include-dash-manifest"
+      ],
+      "group": "Hidden / deprecated root options",
+      "destination": null,
+      "action": "callback",
+      "type": null,
+      "nargs": 1,
+      "metavar": null,
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--youtube-include-hls-manifest"
+      ],
+      "group": "Hidden / deprecated root options",
+      "destination": null,
+      "action": "callback",
+      "type": null,
+      "nargs": 1,
+      "metavar": null,
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--youtube-print-sig-code"
+      ],
+      "group": "Hidden / deprecated root options",
+      "destination": null,
+      "action": "callback",
+      "type": null,
+      "nargs": 1,
+      "metavar": null,
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--youtube-skip-dash-manifest"
+      ],
+      "group": "Hidden / deprecated root options",
+      "destination": null,
+      "action": "callback",
+      "type": null,
+      "nargs": 1,
+      "metavar": null,
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "--youtube-skip-hls-manifest"
+      ],
+      "group": "Hidden / deprecated root options",
+      "destination": null,
+      "action": "callback",
+      "type": null,
+      "nargs": 1,
+      "metavar": null,
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    },
+    {
+      "names": [
+        "-C"
+      ],
+      "group": "Hidden / deprecated root options",
+      "destination": null,
+      "action": "callback",
+      "type": null,
+      "nargs": 1,
+      "metavar": null,
+      "choices": null,
+      "hidden": true,
+      "upstream_behavior": "declared",
+      "independent_parity": "not_evaluated"
+    }
+  ]
+}
