@@ -255,7 +255,9 @@ def test_sigint_cancels_slow_download_and_retains_partial(tmp_path):
             self.end_headers()
             try:
                 while not stopped.is_set():
-                    self.wfile.write(b"x" * 1024)
+                    # Fill Python's platform-dependent file buffer promptly while
+                    # keeping the full 100 MiB response long enough to interrupt.
+                    self.wfile.write(b"x" * 65536)
                     self.wfile.flush()
                     sent.set()
                     stopped.wait(0.05)
