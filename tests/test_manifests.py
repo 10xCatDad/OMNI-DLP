@@ -86,9 +86,9 @@ def test_media_playlist_unknown_codecs_and_liveness():
     assert live.metadata["is_live"] is True
 
 
-@pytest.mark.parametrize("line", ['#EXT-X-KEY:METHOD=AES-128,URI="key.bin"', '#EXT-X-SESSION-KEY:METHOD=SAMPLE-AES,KEYFORMAT="com.apple.streamingkeydelivery",URI="skd://key"'])
+@pytest.mark.parametrize("line", ['#EXT-X-KEY:METHOD=SAMPLE-AES,URI="key.bin"', '#EXT-X-SESSION-KEY:METHOD=SAMPLE-AES,KEYFORMAT="com.apple.streamingkeydelivery",URI="skd://key"'])
 def test_encrypted_media_and_session_keys_fail_explicitly(line):
-    with pytest.raises(OmniError, match="Encrypted HLS"):
+    with pytest.raises(OmniError, match="Unsupported HLS encryption"):
         parse_hls('#EXTM3U\n' + line + '\n#EXTINF:10,\nfile.ts\n', BASE)
 
 
@@ -165,3 +165,51 @@ def test_audio_renditions_and_segments_cannot_mix():
 def test_default_audio_cannot_disable_autoselection():
     with pytest.raises(OmniError, match="automatic selection"):
         parse_hls('#EXTM3U\n#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="a",NAME="one",DEFAULT=YES,AUTOSELECT=NO,URI="audio.m3u8"', BASE)
+
+
+@pytest.mark.parametrize("iv", ["", ",IV=0x1", ",IV=0x0123456789ABCDEF0123456789ABCDEF"])
+def test_ordinary_aes128_is_supported_and_not_marked_drm(iv):
+    text = '#EXTM3U\n#EXT-X-KEY:METHOD=AES-128,URI="https://keys.example.test/key.bin",KEYFORMAT="identity"' + iv + '\n#EXTINF:1,\nsegment.ts\n#EXT-X-ENDLIST'
+    item, = parse_hls(text, BASE)
+    assert item.metadata["encryption"] == "AES-128"
+    assert not item.metadata.get("drm")
+    assert "keys.example.test" not in str(item.metadata)
+
+
+def test_aes128_session_key_marks_master_variants():
+    items = parse_hls(MASTER.replace('#EXTM3U', '#EXTM3U\n#EXT-X-SESSION-KEY:METHOD=AES-128,URI="key.bin"'), BASE)
+    assert all(item.metadata["encryption"] == "AES-128" for item in items)
+
+
+def test_aes128_followed_by_clear_segments_retains_encryption_requirement():
+    text = '#EXTM3U\n#EXT-X-KEY:METHOD=AES-128,URI="key.bin"\n#EXTINF:1,\na.ts\n#EXT-X-KEY:METHOD=NONE\n#EXTINF:1,\nb.ts'
+    assert parse_hls(text, BASE)[0].metadata["encryption"] == "AES-128"
+
+
+@pytest.mark.parametrize("attributes", [
+    'METHOD=AES-128',
+    'METHOD=AES-128,URI="key.bin",IV=0x' + '0' * 33,
+    'METHOD=AES-128,URI="key.bin",IV=-1',
+    'METHOD=AES-128,URI="key.bin",IV=0xINVALID',
+    'METHOD=AES-128,URI="key.bin",KEYFORMAT="com.apple.streamingkeydelivery"',
+    'METHOD=AES-128,URI="key.bin",KEYFORMATVERSIONS="2"',
+    'METHOD=AES-128,URI="file:///example/key"',
+    'METHOD=AES-128,URI="data:application/octet-stream;base64,example"',
+    'METHOD=AES-128,URI="crypto:file:///example/key"',
+    'METHOD=AES-128,URI="tcp://localhost:1234"',
+    'METHOD=NONE,URI="key.bin"',
+])
+def test_invalid_or_unsupported_key_attributes_are_rejected(attributes):
+    with pytest.raises(OmniError):
+        parse_hls('#EXTM3U\n#EXT-X-KEY:' + attributes + '\n#EXTINF:1,\nsegment.ts', BASE)
+
+
+@pytest.mark.parametrize("line", [
+    '#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID="s",NAME="English",URI="tcp://localhost:1234"',
+    '#EXT-X-I-FRAME-STREAM-INF:BANDWIDTH=1,URI="file:///example"',
+    '#EXT-X-PART:DURATION=0.2,URI="crypto:file:///example"',
+    '#EXT-X-PRELOAD-HINT:TYPE=PART,URI="data:text/plain,example"',
+])
+def test_nonselected_rendition_and_part_uris_still_validate(line):
+    with pytest.raises(OmniError):
+        parse_hls('#EXTM3U\n' + line + '\n#EXTINF:1,\nsegment.ts', BASE)

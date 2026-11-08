@@ -102,16 +102,60 @@ def test_invalid_media_urls_are_rejected_and_duplicate_formats_removed():
     ('<title>Client Challenge</title>', "browser challenge"),
     ('<html>ordinary page</html>', "unavailable"),
 ])
-def test_invalid_player_pages_are_actionable(text, match):
+@pytest.mark.parametrize("metadata_only", [False, True])
+def test_invalid_player_pages_are_actionable(text, match, metadata_only):
     url = "https://artist.bandcamp.com/track/song"
     with pytest.raises(OmniError, match=match):
-        extract(url, Context(url, text))
+        extract(url, Context(url, text, metadata_only=metadata_only))
 
 
 def test_no_accessible_audio_does_not_become_a_successful_empty_album():
     url = "https://artist.bandcamp.com/album/album"
     with pytest.raises(OmniError, match="no publicly playable"):
         extract(url, Context(url, page([track(file=None)])))
+
+
+def test_metadata_only_retains_unavailable_tracks_and_collection_indices():
+    url = "https://artist.bandcamp.com/album/album"
+    context = Context(url, page([track(file=None, about="Track description"), track(2), track(3, file=None)],
+                              current={"id": 42, "title": "Album", "about": "Album description"}),
+                      metadata_only=True)
+    items = extract(url, context)
+    assert [item.id for item in items] == ["1", "2", "3"]
+    assert [item.metadata["playlist_index"] for item in items] == [1, 2, 3]
+    assert items[0].metadata["description"] == "Track description"
+    assert items[2].metadata["description"] == "Album description"
+    assert items[0].metadata["thumbnails"][0]["url"] == "https://images.example/cover.jpg"
+    assert items[0].metadata["formats_required"] and items[0].metadata["metadata_only"]
+    assert not items[0].formats and not items[0].requested_formats
+    assert items[0].url == "https://artist.bandcamp.com/track/song-1" and items[0].source_url == url
+    assert items[1].formats and not items[1].metadata.get("formats_required")
+    assert items[0].metadata["unavailable_track_ids"] == ["1", "3"]
+    assert not items[0].metadata["collection_complete"]
+    assert context.requests == [url]
+
+
+def test_metadata_only_does_not_invent_tracks_from_empty_records():
+    url = "https://artist.bandcamp.com/album/album"
+    with pytest.raises(OmniError, match="no publicly playable"):
+        extract(url, Context(url, page([{}, None, {"track_id": 1}]), metadata_only=True))
+
+
+def test_metadata_only_track_does_not_download_page_as_audio(tmp_path, monkeypatch):
+    from omni_dlp.engine import Downloader, Options
+    from omni_dlp.transfer import TransferOptions
+
+    url = "https://artist.bandcamp.com/track/song"
+    item = extract(url, Context(url, page([track(file=None)]), metadata_only=True))[0]
+    downloader = Downloader(Options(transfer=TransferOptions(directory=str(tmp_path))))
+
+    def unexpected_transfer(*args, **kwargs):
+        pytest.fail("Metadata-only track must never be transferred as page bytes")
+
+    monkeypatch.setattr(downloader, "fetch_one", unexpected_transfer)
+    with pytest.raises(OmniError, match="No playable format"):
+        downloader.fetch([item])
+    assert not list(tmp_path.iterdir())
 
 
 def test_track_identity_mismatch_and_nonfinite_metadata():

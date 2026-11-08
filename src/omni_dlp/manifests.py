@@ -1,6 +1,6 @@
 """Bounded, independent HLS format discovery following RFC 8216 section 4.3.4.
 
-Only HTTP(S) resources and clear streams are admitted. Master playlists become
+Only HTTP(S) resources with clear or ordinary AES-128 media are admitted. Master playlists become
 selectable variants plus external audio renditions; a media playlist yields one
 opaque HLS descriptor. Segment fetching remains the adaptive downloader's job.
 I-frame/trick-play and subtitle renditions are not exposed as playable formats.
@@ -109,9 +109,9 @@ def _slug(value: str) -> str:
 
 
 def parse_hls(text: str, url: str, *, headers: dict | None = None) -> list[Format]:
-    """Extract clear HLS variants without fetching any subordinate resources.
+    """Extract HLS variants without fetching any subordinate resources.
 
-    A malformed or encrypted playlist raises ``OmniError``. A clear media
+    Malformed playlists and unsupported encryption raise ``OmniError``. A media
     playlist returns one descriptor whose codec/quality fields remain unknown.
     Master playlists return declared variants in source order, then audio
     renditions. External audio metadata identifies the compatible rendition
@@ -136,14 +136,31 @@ def parse_hls(text: str, url: str, *, headers: dict | None = None) -> list[Forma
     pending = None
     media_playlist = False
     media_uri = False
+    encrypted = False
     for raw in lines[1:]:
         line = raw.strip()
         if not line:
             continue
         if line.startswith(("#EXT-X-KEY:", "#EXT-X-SESSION-KEY:")):
             attributes = _attributes(line.partition(':')[2])
-            if attributes.get("METHOD") != "NONE":
-                raise OmniError("Encrypted HLS manifests are unsupported by native format discovery")
+            method = attributes.get("METHOD")
+            if method == "NONE":
+                if len(attributes) != 1 or line.startswith("#EXT-X-SESSION-KEY:"):
+                    raise OmniError("Invalid HLS clear-key declaration")
+            elif method == "AES-128":
+                if attributes.get("KEYFORMAT", "identity") != "identity":
+                    raise OmniError("Unsupported HLS key format; only ordinary identity-key AES-128 is supported")
+                versions = attributes.get("KEYFORMATVERSIONS", "1")
+                if not re.fullmatch(r"[1-9]\d*(?:/[1-9]\d*)*", versions) or "1" not in versions.split('/'):
+                    raise OmniError("Unsupported HLS key format version")
+                if "URI" not in attributes:
+                    raise OmniError("HLS AES-128 key declaration requires a key URI")
+                _uri(attributes["URI"], base)
+                if "IV" in attributes and not re.fullmatch(r"0[xX][0-9a-fA-F]{1,32}", attributes["IV"]):
+                    raise OmniError("Invalid HLS AES-128 initialization vector")
+                encrypted = True
+            else:
+                raise OmniError("Unsupported HLS encryption; only clear media and ordinary AES-128 are supported")
         elif line.startswith("#EXT-X-STREAM-INF:"):
             if pending is not None:
                 raise OmniError("HLS variant is missing its playlist URI")
@@ -152,6 +169,8 @@ def parse_hls(text: str, url: str, *, headers: dict | None = None) -> list[Forma
                 raise OmniError("HLS variant is missing BANDWIDTH")
         elif line.startswith("#EXT-X-MEDIA:"):
             attributes = _attributes(line.partition(':')[2])
+            if "URI" in attributes:
+                attributes["URI"] = _uri(attributes["URI"], base)
             if attributes.get("TYPE") == "AUDIO":
                 if not attributes.get("GROUP-ID") or not attributes.get("NAME"):
                     raise OmniError("HLS audio rendition requires GROUP-ID and NAME")
@@ -160,9 +179,12 @@ def parse_hls(text: str, url: str, *, headers: dict | None = None) -> list[Forma
                         raise OmniError(f"Invalid HLS {key}")
                 if attributes.get("DEFAULT") == "YES" and attributes.get("AUTOSELECT") == "NO":
                     raise OmniError("Default HLS audio must permit automatic selection")
-                if "URI" in attributes:
-                    attributes["URI"] = _uri(attributes["URI"], base)
                 renditions.append(attributes)
+        elif line.startswith(("#EXT-X-I-FRAME-STREAM-INF:", "#EXT-X-SESSION-DATA:",
+                              "#EXT-X-PART:", "#EXT-X-PRELOAD-HINT:", "#EXT-X-RENDITION-REPORT:")):
+            attributes = _attributes(line.partition(':')[2])
+            if "URI" in attributes:
+                _uri(attributes["URI"], base)
         elif line.startswith(("#EXTINF:", "#EXT-X-TARGETDURATION:", "#EXT-X-MEDIA-SEQUENCE:")):
             media_playlist = True
         elif line.startswith("#EXT-X-MAP:"):
@@ -188,7 +210,8 @@ def parse_hls(text: str, url: str, *, headers: dict | None = None) -> list[Forma
         if not media_playlist:
             raise OmniError("HLS manifest declares no playable streams")
         return [Format(base, format_id="hls", ext="m3u8", protocol="hls", headers=request,
-                       metadata={"manifest_url": base, "is_live": "#EXT-X-ENDLIST" not in text})]
+                       metadata={"manifest_url": base, "is_live": "#EXT-X-ENDLIST" not in text,
+                                 "encryption": "AES-128" if encrypted else "none"})]
 
     groups: dict[str, list[dict[str, str]]] = {}
     for entry in renditions:
@@ -232,7 +255,8 @@ def parse_hls(text: str, url: str, *, headers: dict | None = None) -> list[Forma
         metadata = {"manifest_url": base, "audio_group": group,
                     "subtitles_group": attributes.get("SUBTITLES", ""),
                     "video_group": attributes.get("VIDEO", ""),
-                    "codecs": attributes.get("CODECS", "")}
+                    "codecs": attributes.get("CODECS", ""),
+                    "encryption": "AES-128" if encrypted else "none"}
         candidate = Format(target, name, ext="m3u8", protocol="hls", vcodec=video,
                            acodec=audio, width=width, height=height, fps=fps,
                            tbr=(average or bandwidth) / 1000,
@@ -256,6 +280,8 @@ def parse_hls(text: str, url: str, *, headers: dict | None = None) -> list[Forma
                                "default": attributes.get("DEFAULT") == "YES",
                                "autoselect": attributes.get("AUTOSELECT") == "YES",
                                "channels": attributes.get("CHANNELS", ""),
+                               "encryption": "AES-128" if encrypted else "none",
+                               "language_preference": 1 if attributes.get("DEFAULT") == "YES" else 0,
                            })
         append(candidate, (target, group, language, attributes["NAME"]))
     return results

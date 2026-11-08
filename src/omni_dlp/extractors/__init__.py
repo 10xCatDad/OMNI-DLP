@@ -10,6 +10,8 @@ BUILTINS = (
     ("bandcamp", "Bandcamp tracks and albums with embedded media metadata"),
     ("archive", "Internet Archive items and individual files"),
     ("wikimedia", "Wikimedia file pages and bounded category collections"),
+    ("reddit", "Reddit public posts, galleries, and hosted media"),
+    ("soundcloud", "SoundCloud public tracks, bounded sets, and artwork"),
 )
 
 

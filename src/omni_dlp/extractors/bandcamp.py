@@ -139,7 +139,11 @@ def extract(url: str, context: ExtractorContext) -> list[Media]:
         formats = _formats(track, url, context)
         if not formats:
             unavailable.append(identifier)
-            continue
+            # A valid public track record can still expose artwork and text.
+            # Do not turn malformed player entries into invented tracks.
+            has_metadata = isinstance(track.get("title"), str) and bool(track["title"].strip())
+            if not context.metadata_only or not has_metadata:
+                continue
         if context.media_types and "audio" not in context.media_types:
             continue
         title = track.get("title") if isinstance(track.get("title"), str) else album or identifier
@@ -148,12 +152,20 @@ def extract(url: str, context: ExtractorContext) -> list[Media]:
                     "artist": artist, "duration": _number(track.get("duration")),
                     "track_number": _number(track.get("track_num"), integer=True) or index,
                     "thumbnails": [{"url": image}] if image else []}
+        description = next((value for value in (track.get("about"), track.get("description"), current.get("about"))
+                            if isinstance(value, str) and value), None)
+        if description is not None:
+            metadata["description"] = description
         if is_album:
             metadata.update(album=album, playlist_id=album_id, playlist_title=album,
                             playlist_index=index, playlist_count=len(tracks))
-        first = formats[0]
-        output.append(Media(url=first.url, title=title, id=identifier, kind="audio", ext=first.ext,
-                            source_url=url, headers=first.headers, metadata=metadata, formats=formats))
+        first = formats[0] if formats else None
+        if first is None:
+            metadata.update(metadata_only=True, formats_required=True)
+        output.append(Media(url=first.url if first else metadata["webpage_url"], title=title,
+                            id=identifier, kind="audio", ext=first.ext if first else "bin", source_url=url,
+                            headers=first.headers if first else context.scoped_headers(metadata["webpage_url"]),
+                            metadata=metadata, formats=formats))
         if len(output) >= context.max_items:
             break
     if image and context.media_types and "image" in context.media_types and len(output) < context.max_items:

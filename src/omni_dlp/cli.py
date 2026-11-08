@@ -4,7 +4,6 @@ from __future__ import annotations
 import argparse
 import json
 import math
-import os
 from pathlib import Path
 import re
 import sys
@@ -41,6 +40,16 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--media-type", action="append", choices=["image", "audio", "video", "document", "archive", "font", "model", "subtitle", "other"], help="Include only this kind (repeatable)")
     p.add_argument("--jobs", type=int, default=1, help="Concurrent downloads, 1 to 64")
     p.add_argument("--max-items", type=int, default=1000, help="Maximum discovered items per URL")
+    p.add_argument("-I", "--playlist-items", help="Source item indices, inclusive ranges, or slices")
+    p.add_argument("--playlist-start", type=int, default=1)
+    p.add_argument("--playlist-end", type=int)
+    p.add_argument("--playlist-reverse", action="store_true")
+    p.add_argument("--playlist-random", action="store_true")
+    p.add_argument("--playlist-random-seed", type=int, help="Reproducible collection shuffle")
+    p.add_argument("--date", help="Only entries uploaded on this date (YYYYMMDD or ISO date)")
+    p.add_argument("--datebefore", help="Include entries on or before this date")
+    p.add_argument("--dateafter", help="Include entries on or after this date")
+    p.add_argument("--match-filter", help="Native scalar metadata filter; combine conditions with &")
     p.add_argument("--retries", type=int, default=3)
     p.add_argument("--socket-timeout", dest="timeout", type=float, default=30)
     p.add_argument("-r", "--limit-rate", type=size)
@@ -55,6 +64,19 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("-s", "--simulate", action="store_true")
     p.add_argument("-j", "--dump-json", action="store_true", help="Print discovered metadata as JSON lines, without downloading")
     p.add_argument("--write-info-json", action="store_true", help="Write credential-redacted metadata beside downloads")
+    p.add_argument("--skip-download", action="store_true", help="Write requested sidecars without downloading the main media")
+    p.add_argument("--write-subs", action="store_true")
+    p.add_argument("--write-auto-subs", action="store_true")
+    p.add_argument("--sub-langs", help="Comma-separated language patterns; all and -exclusions supported")
+    p.add_argument("--sub-format", default="vtt/srt/best", help="Subtitle format fallback order")
+    p.add_argument("--list-subs", action="store_true")
+    p.add_argument("--write-thumbnail", action="store_true")
+    p.add_argument("--write-all-thumbnails", action="store_true")
+    p.add_argument("--list-thumbnails", action="store_true")
+    p.add_argument("--write-description", action="store_true")
+    p.add_argument("--embed-metadata", action="store_true", help="Write supported tags to a retained .embedded media copy")
+    p.add_argument("--embed-chapters", action="store_true", help="Write chapters to a retained .embedded media copy")
+    p.add_argument("--embed-subs", action="store_true", help="Embed selected subtitles into a retained .embedded media copy")
     p.add_argument("--manifest", help="Append completed download records as flushed JSON lines")
     p.add_argument("--progress-json", action="store_true", help="Emit flushed JSON completion/error events on stderr")
     p.add_argument("-f", "--format", help="Native format selector: IDs, filters, / fallback, + merge, , multiple outputs")
@@ -103,17 +125,29 @@ def public_record(item):
     return item
 
 
-def atomic_json(path: Path, record: dict) -> None:
-    import tempfile
-    path.parent.mkdir(parents=True, exist_ok=True)
-    descriptor, temporary = tempfile.mkstemp(prefix=".omni-meta-", dir=path.parent)
-    try:
-        with os.fdopen(descriptor, "w", encoding="utf-8") as out:
-            json.dump(record, out, indent=2, ensure_ascii=False)
-            out.write("\n")
-        os.replace(temporary, path)
-    finally:
-        Path(temporary).unlink(missing_ok=True)
+def list_assets(item, *, subtitles: bool, thumbnails: bool) -> None:
+    """Print descriptive asset fields without exposing source credentials."""
+    if subtitles:
+        print("LANGUAGE\tTYPE\tFORMATS")
+        for key, label in (("subtitles", "manual"), ("automatic_captions", "automatic")):
+            groups = item.metadata.get(key) or {}
+            if not isinstance(groups, dict):
+                raise OmniError("Subtitle metadata must be a language dictionary")
+            for language, tracks in groups.items():
+                if not isinstance(tracks, list):
+                    raise OmniError("Subtitle tracks must be a list")
+                extensions = dict.fromkeys(str(track.get("ext") or "unknown")
+                    for track in tracks if isinstance(track, dict))
+                print("\t".join(map(display_text, [language, label, ", ".join(extensions)])))
+    if thumbnails:
+        print("THUMBNAIL\tRESOLUTION")
+        images = item.metadata.get("thumbnails") or []
+        if not isinstance(images, list):
+            raise OmniError("Thumbnail metadata must be a list")
+        for index, thumbnail in enumerate(images, 1):
+            if isinstance(thumbnail, dict):
+                print("\t".join(map(display_text, [thumbnail.get("id", index),
+                    f"{thumbnail.get('width') or '?'}x{thumbnail.get('height') or '?'}"])))
 
 
 def load_config(path: str, p: argparse.ArgumentParser) -> None:
@@ -186,6 +220,8 @@ def main(argv: list[str] | None = None) -> int:
         p.error("retries must be nonnegative and timeout must be finite and positive")
     if opts.extract_audio and opts.remux_video:
         p.error("choose either --extract-audio or --remux-video")
+    if opts.skip_download and (opts.embed_metadata or opts.embed_chapters or opts.embed_subs):
+        p.error("embedding requires the main media; remove --skip-download")
     urls = opts.urls
     try:
         if opts.batch_file:
@@ -207,7 +243,16 @@ def main(argv: list[str] | None = None) -> int:
         if opts.referer:
             headers["Referer"] = opts.referer
         from .engine import Downloader, Options
-        from .transfer import TransferOptions
+        from .assets import AssetOptions
+        from .collection_selection import CollectionOptions
+        from .transfer import OUTPUT_SIDECARS, TransferOptions
+        collection = CollectionOptions(playlist_items=opts.playlist_items,
+            playlist_start=opts.playlist_start, playlist_end=opts.playlist_end,
+            playlist_reverse=opts.playlist_reverse, playlist_random=opts.playlist_random,
+            random_seed=opts.playlist_random_seed, date=opts.date, datebefore=opts.datebefore,
+            dateafter=opts.dateafter, match_filter=opts.match_filter)
+        collection_filtering = any((opts.playlist_items is not None, opts.playlist_start != 1,
+            opts.playlist_end is not None, opts.date, opts.datebefore, opts.dateafter, opts.match_filter))
         engine = Downloader(Options(
             transfer=TransferOptions(directory=opts.directory, output=opts.output, retries=opts.retries,
                 timeout=opts.timeout, resume=opts.resume, overwrite=opts.force_overwrites,
@@ -216,7 +261,14 @@ def main(argv: list[str] | None = None) -> int:
             max_items=opts.max_items, archive=opts.download_archive,
             audio_format=opts.audio_format if opts.extract_audio else None,
             remux_format=opts.remux_video, plugins=not opts.no_plugins, direct=opts.direct,
-            format=opts.format, format_sort=opts.format_sort, merge_output_format=opts.merge_output_format))
+            format=opts.format, format_sort=opts.format_sort, merge_output_format=opts.merge_output_format,
+            collection=collection if collection != CollectionOptions() else None, assets=AssetOptions(write_subs=opts.write_subs,
+                write_auto_subs=opts.write_auto_subs, sub_langs=opts.sub_langs, sub_format=opts.sub_format,
+                write_thumbnail=opts.write_thumbnail, write_all_thumbnails=opts.write_all_thumbnails,
+                write_description=opts.write_description),
+            embed_tags=opts.embed_metadata, embed_chapters=opts.embed_chapters,
+            embed_subtitles=opts.embed_subs, reserved_paths=[opts.manifest] if opts.manifest else [],
+            metadata_only=opts.skip_download or ((opts.list_subs or opts.list_thumbnails) and not opts.list_formats)))
         errors = 0
         def error(media, exc):
             nonlocal errors
@@ -230,8 +282,8 @@ def main(argv: list[str] | None = None) -> int:
         def complete(result):
             # An archive hit may refer to an older directory. Validate the
             # actual result, not only today's planned output paths.
-            actual_paths = {str(Path(result.path + suffix).resolve()).casefold() for suffix in (
-                "", ".part", ".part.json", ".omni.json", ".omni.lock", ".info.json")}
+            actual_paths = {str(Path(item.path + suffix).resolve()).casefold()
+                for item in [result, *result.attachments] for suffix in OUTPUT_SIDECARS}
             if opts.manifest and str(Path(opts.manifest).resolve()).casefold() in actual_paths:
                 raise OmniError("Manifest path overlaps the actual media output or sidecar")
             if opts.download_archive:
@@ -240,7 +292,8 @@ def main(argv: list[str] | None = None) -> int:
                     raise OmniError("Actual media output or sidecar overlaps the download archive")
             record = public_record(result.to_dict())
             if opts.write_info_json:
-                atomic_json(Path(result.path + ".info.json"), record)
+                from .infojson import write_info_json
+                write_info_json(Path(result.path + ".info.json"), record, overwrite=opts.force_overwrites)
             if opts.manifest:
                 with open(opts.manifest, "a", encoding="utf-8") as stream:
                     stream.write(json.dumps(record, ensure_ascii=False) + "\n")
@@ -249,20 +302,27 @@ def main(argv: list[str] | None = None) -> int:
                 print(json.dumps({"schema_version": 1, "event": "complete", **record}), file=sys.stderr, flush=True)
             elif not opts.quiet:
                 print(f"{'Verified' if result.skipped else 'Downloaded'}: {result.path}", flush=True)
+                for attachment in result.attachments:
+                    print(f"{'Verified' if attachment.skipped else 'Downloaded'}: {attachment.path}", flush=True)
         media = []
         for url in dict.fromkeys(urls):
             try:
                 found = engine.inspect(url)
                 if not found:
+                    if collection_filtering:
+                        continue
                     raise OmniError("No matching media found. Site-specific extraction may require 'omni-dlp compat URL'.")
                 media.extend(found)
             except (OmniError, OSError, ValueError) as exc:
                 error(None, exc)
                 if not opts.ignore_errors:
                     return 1
-        if opts.list_formats:
+        if opts.list_formats or opts.list_subs or opts.list_thumbnails:
             for item in media:
                 print(f"{display_text(item.id or 'media')} // {display_text(item.title)}")
+                list_assets(item, subtitles=opts.list_subs, thumbnails=opts.list_thumbnails)
+                if not opts.list_formats:
+                    continue
                 print("ID\tEXT\tRESOLUTION\tVCODEC\tACODEC\tKBIT/S\tPROTOCOL")
                 from .selection import sort_formats
                 for fmt in sort_formats(item.formats, opts.format_sort):
@@ -277,7 +337,8 @@ def main(argv: list[str] | None = None) -> int:
             for item in output:
                 print(json.dumps(public_record(item.to_dict()), ensure_ascii=False), flush=True)
         else:
-            media = engine.prepare(media, on_error=error if opts.ignore_errors else None)
+            if not opts.skip_download:
+                media = engine.prepare(media, on_error=error if opts.ignore_errors else None)
             if opts.manifest:
                 manifest = Path(opts.manifest).resolve()
                 if opts.download_archive:
@@ -286,12 +347,21 @@ def main(argv: list[str] | None = None) -> int:
                         raise OmniError("Manifest path overlaps the download archive")
                 for item in media:
                     for destination in engine.output_paths(item):
-                        related = (Path(str(destination) + suffix) for suffix in (
-                            "", ".part", ".part.json", ".omni.json", ".omni.lock", ".info.json"))
+                        related = (Path(str(destination) + suffix) for suffix in OUTPUT_SIDECARS)
                         if any(str(manifest).casefold() == str(path).casefold() for path in related):
                             raise OmniError("Manifest path overlaps a media output or sidecar")
                 manifest.parent.mkdir(parents=True, exist_ok=True)
-            engine.fetch(media, on_result=complete, on_error=error if opts.ignore_errors else None)
+            if opts.skip_download:
+                engine.fetch_assets(media, on_result=complete, on_error=error if opts.ignore_errors else None)
+                if opts.write_info_json:
+                    from .infojson import write_info_json
+                    for item in media:
+                        base = engine._base_output_paths(item)[-1]
+                        write_info_json(Path(str(base) + ".info.json"),
+                            {"media": public_record(item.to_dict()), "downloaded": False},
+                            overwrite=opts.force_overwrites)
+            else:
+                engine.fetch(media, on_result=complete, on_error=error if opts.ignore_errors else None)
         return 1 if errors else 0
     except KeyboardInterrupt:
         print("Interrupted; resumable partial downloads are retained.", file=sys.stderr)

@@ -404,6 +404,10 @@ def extract(url: str, context: ExtractorContext) -> list[Media]:
     if not formats:
         if assets:
             return assets[:context.max_items]
+        if context.metadata_only and (details.get("title") or manual or automatic or thumbnails):
+            metadata["formats_required"] = True
+            metadata["omitted_formats"] = omitted
+            return [base]
         reasons = ", ".join(f"{key}={value}" for key, value in sorted(omitted.items())) or "no direct formats"
         raise OmniError("YouTube supplied no independently usable formats (" + reasons
                         + "). Native signature/n challenges, PO-token generation, and SABR are not implemented")

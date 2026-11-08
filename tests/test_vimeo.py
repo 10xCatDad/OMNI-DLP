@@ -137,10 +137,11 @@ def test_file_urls_and_protected_formats_are_not_advertised():
 
 @pytest.mark.parametrize("data,match", [(None, "invalid player"), ({"view": 4}, "password"),
     ({"message": "Forbidden secret"}, "access-restricted"), ({"video": {"id": 456}}, "different video")])
-def test_restricted_invalid_or_mismatched_config_is_explicit(data, match):
+@pytest.mark.parametrize("metadata_only", [False, True])
+def test_restricted_invalid_or_mismatched_config_is_explicit(data, match, metadata_only):
     url = "https://vimeo.com/123"
     with pytest.raises(OmniError, match=match) as error:
-        extract(url, Context(url, data))
+        extract(url, Context(url, data, metadata_only=metadata_only))
     assert "secret" not in str(error.value)
 
 
@@ -159,6 +160,120 @@ def test_empty_irrelevant_filter_and_malformed_optional_fields():
     item = extract(url, Context(url, data))[0]
     assert item.formats[0].width is None and item.formats[0].fps is None
     assert extract(url, Context(url, data, media_types={"document"})) == []
+
+
+def test_metadata_only_preserves_assets_without_supported_video():
+    url = "https://vimeo.com/123"
+    data = config()
+    data["request"]["files"] = {"hls_cenc": {"cdns": {"edge": {"url": "https://media.example/protected.m3u8"}}}}
+    data["video"]["description"] = "Public description"
+    item = extract(url, Context(url, data, metadata_only=True))[0]
+    assert item.id == "123" and item.url == item.source_url == url
+    assert not item.formats and not item.requested_formats
+    assert item.metadata["formats_required"] and item.metadata["metadata_only"]
+    assert item.metadata["description"] == "Public description"
+    assert item.metadata["thumbnails"] and item.metadata["subtitles"]["en"]
+    with pytest.raises(OmniError, match="no accessible clear"):
+        extract(url, Context(url, data))
+
+
+@pytest.mark.parametrize("metadata_only,media_types", [(True, None), (True, {"video"}),
+                                                       (False, {"image", "subtitle"})])
+def test_metadata_or_asset_only_requests_do_not_resolve_dash_indirection(metadata_only, media_types):
+    url = "https://vimeo.com/123"
+    data = config()
+    data["request"]["files"] = {"dash": {"cdns": {"edge": {"url": "https://media.example/descriptor?json=1"}}}}
+    context = Context(url, data, metadata_only=metadata_only, media_types=media_types)
+    context.responses["https://media.example/descriptor?json=1"] = AssertionError("Unexpected video request")
+    items = extract(url, context)
+    assert items and all(not item.formats for item in items)
+    assert context.requests == ["https://player.vimeo.com/video/123/config"]
+
+
+@pytest.mark.parametrize("data", [{}, {"video": {}}, {"video": {"id": 123}}, {"video": {"title": " "}}])
+def test_metadata_only_does_not_make_empty_or_invalid_config_a_success(data):
+    url = "https://vimeo.com/123"
+    with pytest.raises(OmniError, match="no accessible clear"):
+        extract(url, Context(url, data, metadata_only=True))
+
+
+def test_metadata_only_video_does_not_download_page_bytes(tmp_path, monkeypatch):
+    from omni_dlp.engine import Downloader, Options
+    from omni_dlp.transfer import TransferOptions
+
+    url = "https://vimeo.com/123"
+    data = config()
+    data["request"]["files"] = {}
+    item = extract(url, Context(url, data, metadata_only=True))[0]
+    downloader = Downloader(Options(transfer=TransferOptions(directory=str(tmp_path))))
+
+    def unexpected_transfer(*args, **kwargs):
+        pytest.fail("Metadata-only video must never be transferred as page bytes")
+
+    monkeypatch.setattr(downloader, "fetch_one", unexpected_transfer)
+    with pytest.raises(OmniError, match="No playable format"):
+        downloader.fetch([item])
+    assert not list(tmp_path.iterdir())
+
+
+def test_http_metadata_only_extracts_and_saves_assets_without_video(tmp_path):
+    from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+    import threading
+
+    from omni_dlp.assets import AssetOptions, download_assets, plan_assets
+    from omni_dlp.transfer import TransferOptions
+
+    payloads = {"/caption.vtt": b"WEBVTT\n\n00:00.000 --> 00:01.000\nCaption\n",
+                "/cover.jpg": b"\xff\xd8\xfffixture image\xff\xd9"}
+    requests = []
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            requests.append(self.path)
+            if self.path == "/config":
+                base = f"http://127.0.0.1:{self.server.server_port}"
+                data = config()
+                data["request"]["files"] = {}
+                data["video"].update(description="Fixture description", thumbs={"640": base + "/cover.jpg"})
+                data["request"]["text_tracks"] = [{"url": base + "/caption.vtt", "lang": "en"}]
+                body = json.dumps(data).encode()
+            elif self.path in payloads:
+                body = payloads[self.path]
+            else:
+                self.send_error(404)
+                return
+            self.send_response(200)
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, *args):
+            pass
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    url = "https://vimeo.com/123"
+
+    class RoutedContext(ExtractorContext):
+        def get_json(self, source):
+            assert source == "https://player.vimeo.com/video/123/config"
+            return super().get_json(f"http://127.0.0.1:{server.server_port}/config")
+
+    try:
+        item = extract(url, RoutedContext(url, metadata_only=True))[0]
+        main = tmp_path / "fixture.bin"
+        plans = plan_assets(item, main, AssetOptions(write_subs=True, write_thumbnail=True, write_description=True))
+        results = download_assets(plans, TransferOptions(directory=str(tmp_path)))
+        assert len(results) == 3 and not main.exists()
+        assert (tmp_path / "fixture.en.vtt").read_bytes() == payloads["/caption.vtt"]
+        assert (tmp_path / "fixture.jpg").read_bytes() == payloads["/cover.jpg"]
+        assert (tmp_path / "fixture.description").read_text() == "Fixture description"
+        assert requests == ["/config", "/caption.vtt", "/cover.jpg"]
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join()
 
 
 def test_http_fixture_player_and_progressive_download(tmp_path):

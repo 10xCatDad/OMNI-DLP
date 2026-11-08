@@ -1,6 +1,7 @@
 """Selector semantics, hostile input, and optional upstream differential fixtures."""
 from dataclasses import replace
 import math
+import operator
 
 import pytest
 
@@ -251,3 +252,65 @@ def test_seeded_differential_matrix():
                 chosen = ydl._select_formats(info["formats"], ydl.build_format_selector(expression))
                 expected = [[f["format_id"] for f in item.get("requested_formats", [item])] for item in chosen]
                 assert ids(select_formats(formats, expression, sort)) == expected, (case, sort, expression)
+
+
+_FILTER_SIZES = [("1K", 1000), ("1k", 1024), ("1KB", 1000), ("1kB", 1024),
+                 ("1kb", 1000), ("1Kb", 1000), ("1Ki", 1024), ("1KiB", 1024),
+                 ("1M", 1000000), ("1m", 1048576), ("1MB", 1000000), ("1mB", 1048576),
+                 ("1mb", 1000000), ("1MiB", 1048576), ("1G", 1000000000), ("1GiB", 1073741824),
+                 ("1.5K", 1500), ("1.5k", 1536), ("1.5KiB", 1536), ("1.001KiB", 1025),
+                 ("0.0009K", 1), ("0.0005K", 0), ("0.0015K", 2)]
+_COMPARISONS = {"=": operator.eq, "!=": operator.ne, "<": operator.lt,
+                "<=": operator.le, ">": operator.gt, ">=": operator.ge}
+
+
+@pytest.mark.parametrize("literal,threshold", _FILTER_SIZES)
+def test_filter_size_unit_boundaries(literal, threshold):
+    formats = [format_(str(n), audio="aac", filesize=n) for n in range(max(0, threshold - 1), threshold + 2)]
+    for symbol, compare in _COMPARISONS.items():
+        expected = {fmt.format_id for fmt in formats if compare(fmt.filesize, threshold)}
+        chosen = select_formats(formats, f"all[filesize{symbol}{literal}]")
+        assert {group[0].format_id for group in chosen} == expected
+
+
+@pytest.mark.parametrize("literal,threshold", _FILTER_SIZES)
+def test_differential_filter_size_boundaries(literal, threshold):
+    yt_dlp = pytest.importorskip("yt_dlp")
+    ydl = yt_dlp.YoutubeDL({"quiet": True, "no_warnings": True})
+    formats = [format_(str(n), audio="aac", filesize=n) for n in range(max(0, threshold - 1), threshold + 2)]
+    formats.append(format_("unknown", audio="aac"))
+    for symbol in _COMPARISONS:
+        for unknown in ("", "?"):
+            expression = f"filesize{symbol}{unknown}{literal}"
+            predicate = ydl._build_format_filter(expression)
+            expected = {fmt.format_id for fmt in formats if predicate(fmt.to_dict())}
+            chosen = select_formats(formats, f"all[{expression}]")
+            assert {group[0].format_id for group in chosen} == expected
+
+
+@pytest.mark.parametrize("literal", ["1ki", "1kiB", "1KIB", "1Mib", "1KBb"])
+def test_malformed_size_units_are_explicit(literal, formats):
+    with pytest.raises(OmniError, match="numeric"):
+        select_formats(formats, f"all[filesize<{literal}]")
+
+
+@pytest.mark.parametrize("literal,threshold", [("1K", 1024), ("1k", 1024), ("1M", 1048576),
+                                               ("1m", 1048576), ("1.5K", 1536), ("1.001K", 1025)])
+@pytest.mark.parametrize("delimiter", [":", "~"])
+def test_differential_size_sort_uses_binary_bare_units(literal, threshold, delimiter):
+    formats = [format_(str(n), audio="aac", filesize=n) for n in (threshold - 1, threshold, threshold + 1)]
+    sort = f"filesize{delimiter}{literal}"
+    assert ids(select_formats(formats, "best", sort)) == [[str(threshold)]]
+    yt_dlp = pytest.importorskip("yt_dlp")
+    ydl = yt_dlp.YoutubeDL({"quiet": True, "no_warnings": True, "format_sort": [sort]})
+    info = {"formats": [fmt.to_dict() for fmt in formats]}
+    ydl.sort_formats(info)
+    chosen = ydl._select_formats(info["formats"], ydl.build_format_selector("best"))
+    assert ids(select_formats(formats, "best", sort)) == [[fmt["format_id"]] for fmt in chosen]
+
+
+def test_explicit_sort_size_units_are_native_extension():
+    formats = [format_(str(n), audio="aac", filesize=n) for n in (999, 1000, 1001, 1023, 1024, 1025)]
+    assert ids(select_formats(formats, "best", "filesize:1KB")) == [["1000"]]
+    assert ids(select_formats(formats, "best", "filesize:1KiB")) == [["1024"]]
+    assert ids(select_formats(formats, "best", "filesize:1kB")) == [["1024"]]

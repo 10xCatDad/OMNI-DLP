@@ -61,6 +61,7 @@ class DownloadResult:
     size: int
     sha256: str
     skipped: bool = False
+    attachments: list[DownloadResult] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

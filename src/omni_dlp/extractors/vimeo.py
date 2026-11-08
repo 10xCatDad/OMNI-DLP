@@ -95,6 +95,10 @@ def _manifest_url(value, protocol: str, context: ExtractorContext) -> str | None
     # Some Vimeo DASH descriptors return JSON that points at the actual MPD.
     parsed = urlsplit(candidate)
     if protocol == "dash" and parse_qs(parsed.query).get("json") == ["1"]:
+        if context.metadata_only:
+            # Metadata and assets are already in the config. This descriptor
+            # is not itself a media format, and resolving it is unnecessary.
+            return None
         value = context.get_json(candidate)
         candidate = _http(value.get("url")) if isinstance(value, dict) else None
         if not candidate:
@@ -121,9 +125,10 @@ def extract(url: str, context: ExtractorContext) -> list[Media]:
     files = video.get("files") if isinstance(video.get("files"), dict) else request.get("files")
     files = files if isinstance(files, dict) else {}
     title = video.get("title") if isinstance(video.get("title"), str) else f"Vimeo {identifier}"
+    needs_video = not context.media_types or "video" in context.media_types
     formats = []
     seen = set()
-    progressive = files.get("progressive")
+    progressive = files.get("progressive") if needs_video else None
     if isinstance(progressive, list):
         for index, item in enumerate(progressive):
             if not isinstance(item, dict) or item.get("drm") or item.get("has_drm"):
@@ -140,7 +145,7 @@ def extract(url: str, context: ExtractorContext) -> list[Media]:
                                   tbr=_number(item.get("bitrate")), filesize=_number(item.get("size"), integer=True),
                                   headers=context.scoped_headers(candidate)))
     diagnostics = []
-    for protocol in ("hls", "dash"):
+    for protocol in (("hls", "dash") if needs_video else ()):
         manifest = files.get(protocol)
         if not isinstance(manifest, dict) or manifest.get("drm"):
             continue
@@ -199,13 +204,21 @@ def extract(url: str, context: ExtractorContext) -> list[Media]:
                 "duration": _number(video.get("duration")), "uploader": owner.get("name") if isinstance(owner.get("name"), str) else "",
                 "uploader_url": _http(owner.get("url")), "thumbnails": thumbnails, "subtitles": subtitles,
                 "chapters": sorted(chapters, key=lambda value: value["start_time"]), "diagnostics": diagnostics}
+    if isinstance(video.get("description"), str):
+        metadata["description"] = video["description"]
     output = []
-    if not context.media_types or "video" in context.media_types:
+    if needs_video:
         if not formats:
-            raise OmniError("Vimeo has no accessible clear video formats; private, paid, or DRM playback is not implemented")
-        first = formats[0]
-        output.append(Media(url=first.url, title=title, id=identifier, kind="video", ext=first.ext,
-                            source_url=url, headers=first.headers, metadata=metadata, formats=formats))
+            has_metadata = bool(video) and (bool(thumbnails or subtitles or metadata.get("description"))
+                or isinstance(video.get("title"), str) and bool(video["title"].strip()))
+            if not context.metadata_only or not has_metadata:
+                raise OmniError("Vimeo has no accessible clear video formats; private, paid, or DRM playback is not implemented")
+            metadata.update(metadata_only=True, formats_required=True)
+        first = formats[0] if formats else None
+        output.append(Media(url=first.url if first else url, title=title, id=identifier, kind="video",
+                            ext=first.ext if first else "bin", source_url=url,
+                            headers=first.headers if first else context.scoped_headers(url),
+                            metadata=metadata, formats=formats))
     if context.media_types and "image" in context.media_types:
         for index, thumb in enumerate(thumbnails, 1):
             _, ext = classify(thumb["url"])

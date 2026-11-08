@@ -171,6 +171,29 @@ def test_all_challenged_formats_do_not_fall_back_to_downloading_html():
     assert "secret-signature" not in str(error.value)
 
 
+def test_metadata_only_preserves_public_metadata_when_formats_need_challenges():
+    value = response()
+    value["streamingData"] = {"formats": [{"itag": 18, "signatureCipher": urlencode({
+        "url": "https://media.example.invalid/play", "s": "fixture-signature"})}]}
+    [item] = youtube.extract(URL, FixtureContext(page(value), metadata_only=True))
+    assert item.formats == [] and item.url == URL
+    assert item.metadata["formats_required"] is True
+    assert item.metadata["subtitles"]["en"]
+    assert item.metadata["thumbnails"]
+    assert item.metadata["omitted_formats"] == {"encrypted_signature": 1}
+    with pytest.raises(OmniError, match="no independently usable formats"):
+        youtube.extract(URL, FixtureContext(page(value)))
+
+
+def test_metadata_only_does_not_override_access_restrictions_or_missing_content():
+    value = {"playabilityStatus": {"status": "LOGIN_REQUIRED"}}
+    with pytest.raises(OmniError, match="LOGIN_REQUIRED"):
+        youtube.extract(URL, FixtureContext(page(value), metadata_only=True))
+    value = {"playabilityStatus": {"status": "OK"}, "videoDetails": {"videoId": ID}}
+    with pytest.raises(OmniError, match="no independently usable formats"):
+        youtube.extract(URL, FixtureContext(page(value), metadata_only=True))
+
+
 def test_clear_manifests_are_formats_and_manifest_challenges_are_omitted():
     value = response()
     value["streamingData"] = {"hlsManifestUrl": "https://media.example.invalid/hls/stream.m3u8", "dashManifestUrl": "https://media.example.invalid/dash/stream.mpd"}

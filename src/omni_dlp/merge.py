@@ -20,14 +20,14 @@ from .streams import (
     _temporary, download_stream,
 )
 from .transfer import (
-    TransferOptions, _destination_lock, _origin, _safe_component,
+    OUTPUT_SIDECARS, TransferOptions, _destination_lock, _origin, _safe_component,
     check_existing, download, file_digest, output_path, record_complete, validate_url,
 )
 from .types import classify
 
 _SAFE_HEADERS = {"user-agent", "accept", "accept-language", "accept-encoding"}
 _LOCAL_INPUT_FORMATS = _LOCAL_FORMATS + ",srt,webvtt,ass"
-_RECEIPT_SUFFIXES = ("", ".part", ".part.json", ".omni.json", ".omni.lock", ".info.json")
+_RECEIPT_SUFFIXES = OUTPUT_SIDECARS
 _ADAPTIVE_PROTOCOLS = {"hls", "dash", "m3u8", "m3u8_native"}
 
 

@@ -7,13 +7,17 @@ import math
 from pathlib import Path
 import sqlite3
 from threading import Event
-from typing import Callable
+from typing import TYPE_CHECKING, Callable
 
 from .archive import Archive
 from .discovery import discover
 from .models import DownloadResult, Format, Media, OmniError
 from .plugins import discover_plugin
-from .transfer import TransferOptions, download
+from .transfer import OUTPUT_SIDECARS, TransferOptions, download
+
+if TYPE_CHECKING:
+    from .assets import AssetOptions
+    from .collection_selection import CollectionOptions
 
 
 @dataclass
@@ -30,6 +34,13 @@ class Options:
     format: str | None = None
     format_sort: str | None = None
     merge_output_format: str = "mkv"
+    collection: CollectionOptions | None = None
+    assets: AssetOptions | None = None
+    embed_tags: bool = False
+    embed_chapters: bool = False
+    embed_subtitles: bool = False
+    reserved_paths: list[str] = field(default_factory=list)
+    metadata_only: bool = False
 
 
 class Downloader:
@@ -62,21 +73,50 @@ class Downloader:
             if opts.media_types and kind not in opts.media_types:
                 return []
             basename = Path(unquote(urlsplit(url).path)).name
-            return [Media(url=url, title=Path(basename).stem or "media",
+            result = [Media(url=url, title=Path(basename).stem or "media",
                           id=hashlib.sha256(url.encode()).hexdigest()[:16], kind=kind,
                           ext=extension, source_url=url)]
+            if opts.collection is not None:
+                from .collection_selection import select_entries
+                result = select_entries(result, opts.collection)
+            return result
         kwargs = dict(headers=opts.transfer.headers, cookies=opts.transfer.cookies,
-                      timeout=opts.transfer.timeout, media_types=opts.media_types,
+                      timeout=opts.transfer.timeout, media_types=None if opts.collection is not None else opts.media_types,
                       max_items=opts.max_items)
         result = discover_plugin(url, **kwargs) if opts.plugins else None
         if result is None:
             from .extractors import extract_builtin
-            result = extract_builtin(url, **kwargs)
+            # Built-ins use media_types to expose optional artwork/captions and
+            # retain source indices themselves. Generic discovery and plugins
+            # are enumerated before the engine applies its kind filter.
+            result = extract_builtin(url, **{**kwargs, "media_types": opts.media_types}, metadata_only=opts.metadata_only)
         if result is None:
             result = discover(url, **kwargs)
+        # Preserve the original enumeration before media-kind filtering and
+        # local bounds. A loaded prefix is not a complete playlist.
+        discovered = len(result)
+        if opts.collection is not None:
+            from .collection_selection import select_entries
+            has_count = any(item.metadata.get("playlist_count") is not None for item in result)
+            reports_complete = any(item.metadata.get("collection_complete") is True for item in result)
+            if discovered == opts.max_items and not has_count and not reports_complete:
+                result = [replace(item, metadata={**item.metadata, "discovery_limited": True}) for item in result]
+            # Normalize the whole source together. This validates conflicting
+            # counts before filtering and propagates a reported count without
+            # substituting the loaded length for an unknown collection total.
+            result = select_entries(result)
         if opts.media_types:
             result = [item for item in result if item.kind in opts.media_types]
-        return self._expand_manifests(result[:opts.max_items], url)
+            if len(result) != discovered and opts.collection is not None:
+                result = [replace(item, metadata={**item.metadata,
+                    "collection_complete": False}) for item in result]
+        if len(result) > opts.max_items and opts.collection is not None:
+            result = [replace(item, metadata={**item.metadata, "collection_complete": False,
+                "collection_truncated": True}) for item in result[:opts.max_items]]
+        result = result[:opts.max_items]
+        if opts.collection is not None:
+            result = select_entries(result, opts.collection)
+        return result if opts.metadata_only else self._expand_manifests(result, url)
 
     def _expand_manifests(self, media: list[Media], source: str) -> list[Media]:
         from .extractors.common import ExtractorContext
@@ -149,6 +189,8 @@ class Downloader:
                                          vcodec="none" if item.kind == "audio" else "",
                                          acodec="none" if item.kind not in {"audio", "video"} else "")]
                 else:
+                    if item.metadata.get("archive_id") and not item.metadata.get("resource_id"):
+                        item = replace(item, metadata={**item.metadata, "resource_id": str(item.metadata["archive_id"])})
                     selected.append(item)
                     continue
             else:
@@ -190,7 +232,7 @@ class Downloader:
 
     def fetch_one(self, media: Media) -> DownloadResult:
         opts = self.options
-        if media.formats and not media.requested_formats:
+        if not media.requested_formats:
             prepared = self.prepare([media])
             if len(prepared) != 1:
                 raise OmniError("Selection produces multiple outputs; use Downloader.fetch")
@@ -198,24 +240,11 @@ class Downloader:
         if opts.transfer.cancel_event is not None and opts.transfer.cancel_event.is_set():
             raise OmniError("Download cancelled")
         # Protect archive storage even for callers using this single-item API.
-        planned = self.output_paths(media)
-        variant = f"audio={opts.audio_format};remux={opts.remux_format}"
-        if len(media.requested_formats) > 1:
-            variant += ";merge=" + (planned[-1].suffix.lower().lstrip(".") or opts.merge_output_format)
-        elif not opts.direct and (media.ext in {"m3u8", "mpd"} or media.metadata.get("protocol") in {"hls", "dash", "m3u8", "m3u8_native"}):
-            variant += ";adaptive=" + (planned[0].suffix.lower().lstrip(".") or "mkv")
-        if opts.direct:
-            variant += ";direct=True"
-        if self.archive:
-            try:
-                existing = self.archive.lookup(media, variant)
-            except sqlite3.Error as exc:
-                raise OmniError("Cannot read the SQLite download archive") from exc
-            if existing:
-                if opts.audio_format or opts.remux_format:
-                    existing.media = replace(existing.media, metadata={**existing.media.metadata,
-                        "conversion": opts.audio_format or opts.remux_format})
-                return existing
+        self.output_paths(media)
+        variant = self._archive_variant(media)
+        existing = self._archive_lookup(media)
+        if existing:
+            return self._finish(existing)
         protocol = media.metadata.get("protocol")
         if len(media.requested_formats) > 1:
             from .merge import download_merged
@@ -229,14 +258,141 @@ class Downloader:
             from .streams import transcode
             result = transcode(result, audio_format=opts.audio_format, remux_format=opts.remux_format,
                                overwrite=opts.transfer.overwrite, cancel_event=opts.transfer.cancel_event)
+        finished = self._finish(result)
         if self.archive:
             try:
                 self.archive.record(result, variant)
             except sqlite3.Error as exc:
                 raise OmniError("Cannot update the SQLite download archive") from exc
-        return result
+        return finished
+
+    def _archive_variant(self, media: Media) -> str:
+        opts = self.options
+        planned = self._base_output_paths(media)
+        variant = f"audio={opts.audio_format};remux={opts.remux_format}"
+        if len(media.requested_formats) > 1:
+            variant += ";merge=" + (planned[-1].suffix.lower().lstrip(".") or opts.merge_output_format)
+        elif not opts.direct and (media.ext in {"m3u8", "mpd"} or media.metadata.get("protocol") in {"hls", "dash", "m3u8", "m3u8_native"}):
+            variant += ";adaptive=" + (planned[0].suffix.lower().lstrip(".") or "mkv")
+        if opts.direct:
+            variant += ";direct=True"
+        return variant
+
+    def _archive_lookup(self, media: Media) -> DownloadResult | None:
+        opts = self.options
+        if self.archive:
+            try:
+                existing = self.archive.lookup(media, self._archive_variant(media))
+            except sqlite3.Error as exc:
+                raise OmniError("Cannot read the SQLite download archive") from exc
+            if existing:
+                if opts.audio_format or opts.remux_format:
+                    existing.media = replace(existing.media, metadata={**existing.media.metadata,
+                        "conversion": opts.audio_format or opts.remux_format})
+                return existing
+        return None
+
+    def _asset_plans(self, item: Media, main_path: Path):
+        if self.options.assets is None and not self.options.embed_subtitles:
+            return []
+        from .assets import AssetOptions, plan_assets
+        options = self.options.assets or AssetOptions()
+        if self.options.embed_subtitles and not (options.write_subs or options.write_auto_subs):
+            options = replace(options, write_subs=True)
+        return plan_assets(item, main_path, options)
+
+    def _embedding(self) -> bool:
+        return self.options.embed_tags or self.options.embed_chapters or self.options.embed_subtitles
+
+    def _check_paths(self, paths: list[Path]) -> None:
+        protected = {str(Path(path).expanduser().resolve()).casefold() for path in self.options.reserved_paths}
+        if self.options.archive:
+            archive = str(Path(self.options.archive).expanduser().resolve()).casefold()
+            protected.update(archive + suffix for suffix in ("", "-wal", "-shm", "-journal"))
+        seen = set()
+        for path in paths:
+            related = {str(Path(str(path) + suffix).resolve()).casefold() for suffix in OUTPUT_SIDECARS}
+            if related.intersection(protected):
+                raise OmniError("A planned or actual media output or sidecar overlaps the download archive or a reserved path")
+            if related.intersection(seen):
+                raise OmniError("Media and auxiliary outputs overlap; choose distinct output names")
+            seen.update(related)
+
+    def _result_paths(self, result: DownloadResult) -> list[Path]:
+        plans = self._asset_plans(result.media, Path(result.path))
+        paths = [Path(result.path), *(plan.path for plan in plans)]
+        if self._embedding():
+            from .metadata import plan_output
+            paths.append(plan_output(Path(result.path)))
+        # Archive hits can point to a previous directory; validate actual paths
+        # before writing anything beside that file.
+        self._check_paths(paths)
+        return paths
+
+    def _finish(self, result: DownloadResult) -> DownloadResult:
+        self._result_paths(result)
+        plans = self._asset_plans(result.media, Path(result.path))
+        attachments = []
+        if plans:
+            from .assets import download_assets
+            # A verified archive hit authorizes its own containing directory.
+            # Every asset remains confined beside that file, even if today's
+            # configured download directory differs.
+            transfer = replace(self.options.transfer, directory=str(Path(result.path).resolve().parent))
+            attachments = download_assets(plans, transfer)
+        if self._embedding():
+            from .metadata import embed_metadata
+            result = embed_metadata(result, subtitles=[a for a in attachments if a.media.kind == "subtitle"],
+                embed_tags=self.options.embed_tags, embed_chapters=self.options.embed_chapters,
+                embed_subtitles=self.options.embed_subtitles, overwrite=self.options.transfer.overwrite,
+                cancel_event=self.options.transfer.cancel_event, max_filesize=self.options.transfer.max_filesize)
+        return replace(result, attachments=attachments)
+
+    def asset_paths(self, item: Media) -> list[Path]:
+        base = self._base_output_paths(item)[-1]
+        return [plan.path for plan in self._asset_plans(item, base)]
+
+    def fetch_assets(self, media: list[Media], *, on_result=None, on_error=None) -> list[DownloadResult]:
+        """Download requested sidecars without requiring playable main formats."""
+        from .assets import download_assets
+        all_paths = []
+        planned = []
+        for item in {item.url: item for item in media}.values():
+            try:
+                base = self._base_output_paths(item)[-1]
+                plans = self._asset_plans(item, base)
+                all_paths.extend([base, *(plan.path for plan in plans)])
+                planned.append((item, plans))
+            except OmniError as exc:
+                if on_error is None:
+                    raise
+                on_error(item, exc)
+        self._check_paths(all_paths)
+        completed = []
+        for item, plans in planned:
+            try:
+                results = download_assets(plans, self.options.transfer)
+                completed.extend(results)
+                if on_result:
+                    for result in results:
+                        on_result(result)
+            except (OmniError, OSError) as exc:
+                if on_error is None:
+                    raise
+                on_error(item, exc)
+        return completed
 
     def output_paths(self, item: Media) -> list[Path]:
+        destinations = self._base_output_paths(item)
+        base = destinations[-1]
+        destinations.extend(plan.path for plan in self._asset_plans(item, base))
+        if self._embedding():
+            from .metadata import plan_output
+            destinations.append(plan_output(base))
+        self._check_paths(destinations)
+        return destinations
+
+    def _base_output_paths(self, item: Media) -> list[Path]:
         """Planned media outputs, including retained conversion inputs."""
         from .transfer import output_path
         adaptive = not self.options.direct and (item.ext in {"m3u8", "mpd"} or item.metadata.get("protocol") in {"hls", "dash", "m3u8", "m3u8_native"})
@@ -258,8 +414,7 @@ class Downloader:
             archive = str(Path(self.options.archive).expanduser().resolve()).casefold()
             protected = {archive + suffix for suffix in ("", "-wal", "-shm", "-journal")}
             for destination in destinations:
-                related = {str(destination).casefold() + suffix for suffix in (
-                    "", ".part", ".part.json", ".omni.json", ".omni.lock", ".info.json")}
+                related = {str(destination).casefold() + suffix for suffix in OUTPUT_SIDECARS}
                 if related.intersection(protected):
                     raise OmniError("A media output or sidecar overlaps the download archive")
         return destinations
@@ -274,8 +429,12 @@ class Downloader:
         paths: set[str] = set()
         for item in unique:
             occupied = set()
-            for destination in self.output_paths(item):
-                for suffix in ("", ".part", ".part.json", ".omni.json", ".omni.lock", ".info.json"):
+            destinations = self.output_paths(item)
+            existing = self._archive_lookup(item)
+            if existing:
+                destinations.extend(self._result_paths(existing))
+            for destination in destinations:
+                for suffix in OUTPUT_SIDECARS:
                     occupied.add(str(destination).casefold() + suffix)
             if paths.intersection(occupied):
                 raise OmniError("Multiple items resolve to overlapping output paths; include %(id)s in --output")

@@ -30,10 +30,23 @@ entries and the `hls_cenc` family. It does not acquire DRM keys or decrypt prote
 streams. JSON DASH indirection is resolved when provided, and errors in optional
 manifest descriptors are recorded without discarding working progressive files.
 
+Metadata-only extraction keeps public captions, thumbnails, chapters, and description
+text when present in the player config, even without supported video formats. It
+does not resolve DASH JSON indirection; explicit image/subtitle-only extraction also
+avoids video descriptor requests. Existing inline format candidates remain available
+as metadata. A result without candidates carries `metadata_only` and
+`formats_required`, so the normal download pipeline rejects the source-page URL
+instead of saving page bytes. Password, access, identifier, and invalid-config
+failures remain errors. Description text is optional and is not fetched from a
+separate page or authenticated API.
+
 Tests cover URL/hash handling, progressive/manifest schemas, caption/image assets,
 metadata, malformed and restricted responses, identifier mismatches, non-HTTP
 URLs, credential scope, and an actual local HTTP extraction/transfer round trip.
 These fixtures establish schema handling, not universal current Vimeo access.
+Metadata-only fixtures additionally verify unchanged access failures, no unnecessary
+descriptor requests, rejection before main-file transfer, and actual local HTTP
+caption/artwork transfers plus an inline description without writing a video file.
 
 Live check on 2026-11-07 used Vimeo's public
 [player demonstration](https://vimeo.com/76979871):

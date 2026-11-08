@@ -29,6 +29,12 @@ first-class assets. By default they remain metadata rather than extra downloads.
 Caption URLs request WebVTT. Downloading a listed caption still depends on the
 service accepting the request; authentication and proof-of-origin may be needed.
 
+Metadata-only requests can retain matched public metadata, thumbnails and captions
+when no usable audio/video formats exist. Such items have `formats_required=True`
+and omission diagnostics, so the watch page cannot become a media download.
+Normal downloads still fail when no usable format remains. Access restrictions
+and missing video identity are not bypassed by metadata-only mode.
+
 ## Known gaps
 
 Encrypted `s` signatures, `n` throttling challenges, generated proof-of-origin
@@ -43,6 +49,12 @@ retrieved. DRM decryption, authentication/age-verification workflows, channel
 and playlist pagination, search, comments, clip resolution, YouTube Music albums,
 full subtitle translation, and chapter extraction from descriptions are pending.
 No remote JavaScript is evaluated.
+
+An [experimental native signature compiler](../research/YOUTUBE-CHALLENGES.md)
+now independently derives the transforms for two public player fixtures and
+matches three published signature vectors. It is not connected to extraction in
+this release, so encrypted signatures remain unsupported in downloads. The
+compiler and tests are native code, not an upstream runtime wrapper.
 
 The current upstream implementation uses separately versioned JavaScript
 challenge providers and per-client proof-of-origin policies. Replacing those

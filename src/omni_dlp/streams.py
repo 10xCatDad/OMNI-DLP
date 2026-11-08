@@ -1,4 +1,4 @@
-"""Clear adaptive streams and local media conversion using an optional FFmpeg.
+"""Adaptive streams and local media conversion using an optional FFmpeg.
 
 The native adaptive path deliberately has fewer options than HTTP transfers.
 It never forwards credentials to arbitrary hosts referenced by a manifest.
@@ -6,6 +6,7 @@ It never forwards credentials to arbitrary hosts referenced by a manifest.
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -28,6 +29,12 @@ _REMUX = {"mkv", "mp4", "mov", "webm", "ogg", "flv"}
 _CONTAINERS = {"mkv": "matroska", "mp4": "mp4", "mov": "mov", "webm": "webm", "ogg": "ogg", "flv": "flv"}
 _SAFE_HEADERS = {"user-agent", "accept", "accept-language", "accept-encoding"}
 _LOCAL_FORMATS = "mov,mp3,flac,matroska,webm,ogg,wav,aiff,aac,mpeg,mpegts,avi,flv,asf"
+# Some origins serve valid HLS using application/octet-stream. This exact
+# FFmpeg diagnostic says nothing about missing/corrupt media. Never allow a
+# substring match that could swallow a separate error on the same line.
+_BENIGN_HLS_MIME = re.compile(
+    rb"(?:\[hls @ (?:0x)?[0-9a-fA-F]+\] )?mime type is not rfc8216 compliant"
+)
 
 
 def _ffmpeg() -> str:
@@ -83,15 +90,19 @@ def _execute(
                     process.kill()
                     process.wait()
         _check_cancelled(cancel_event)
-        errors.seek(0, os.SEEK_END)
-        if code or errors.tell():
-            # FFmpeg can skip unavailable segments and still return zero. Treat
-            # warnings as incomplete media rather than silently accepting gaps.
+        errors.seek(0)
+        diagnostics = errors.read(65537)
+        unexpected = bool(diagnostics) and (not strict or any(
+            _BENIGN_HLS_MIME.fullmatch(line) is None for line in diagnostics.splitlines()
+        ))
+        if code or len(diagnostics) > 65536 or unexpected:
+            # FFmpeg can skip unavailable segments and still return zero. Reject
+            # every diagnostic except the exact benign HLS MIME warning above.
             # FFmpeg errors contain request URLs, cookies, and local filenames.
             # Do not expose its raw stderr in API errors or application logs.
             raise OmniError(
                 f"FFmpeg reported an error (exit {code}); verify the stream, available codecs, and access. "
-                "Native adaptive downloading supports clear HTTP(S) streams only"
+                "Verify segment and key availability; native HLS supports clear media and ordinary AES-128 only"
             )
         size = temporary.stat().st_size
         if not size:
@@ -115,8 +126,75 @@ def _publish(temporary: Path, destination: Path, overwrite: bool) -> None:
         temporary.unlink()
 
 
+
+def _preflight_hls(media: Media, options: TransferOptions, headers: dict[str, str]) -> bool:
+    """Validate bounded initial manifests and determine whether crypto is needed.
+
+    This is an initial-document check, not an immutable manifest proxy. FFmpeg
+    fetches manifests again and may reload live playlists. Its protocol whitelist
+    continues to prohibit file/data resources regardless of subsequent changes.
+    """
+    from .extractors.common import ExtractorContext
+    from .manifests import _attributes, _uri, parse_hls
+
+    context = ExtractorContext(media.source_url or media.url, headers=headers, timeout=options.timeout)
+    pending = [(media.url, frozenset())]
+    visited = set()
+    keys = set()
+    total_bytes = 0
+    encrypted = False
+    while pending:
+        _check_cancelled(options.cancel_event)
+        target, ancestry = pending.pop()
+        if target in ancestry:
+            raise OmniError("HLS master manifests contain a reference cycle")
+        if target in visited:
+            continue
+        if len(visited) >= 64:
+            raise OmniError("HLS preflight exceeds 64 manifest documents; select a specific variant")
+        visited.add(target)
+        data, final_url, outgoing = context.get_document(target)
+        if final_url in ancestry:
+            raise OmniError("HLS master manifests contain a reference cycle")
+        total_bytes += len(data)
+        if total_bytes > 32 * 1024 * 1024:
+            raise OmniError("HLS preflight exceeds the cumulative document limit")
+        try:
+            text = data.decode("utf-8-sig")
+        except UnicodeError as exc:
+            raise OmniError("HLS manifest is not valid UTF-8") from exc
+        formats = parse_hls(text, final_url, headers=outgoing)
+        encrypted = encrypted or any(item.metadata.get("encryption") == "AES-128" for item in formats)
+        # Ordinary AES-128 keys are exactly 16 bytes. Verify availability and
+        # length without writing key bytes, URLs, or response data to receipts.
+        for line in text.splitlines():
+            line = line.strip()
+            if line.startswith(("#EXT-X-KEY:", "#EXT-X-SESSION-KEY:")):
+                attributes = _attributes(line.partition(':')[2])
+                if attributes.get("METHOD") != "AES-128":
+                    continue
+                key_url = _uri(attributes["URI"], final_url)
+                if key_url in keys:
+                    continue
+                if len(keys) >= 256:
+                    raise OmniError("HLS preflight exceeds 256 distinct AES-128 keys")
+                _check_cancelled(options.cancel_event)
+                key_context = replace(context, max_document=16)
+                try:
+                    key = key_context.get_bytes(key_url)
+                except OmniError as exc:
+                    raise OmniError("HLS AES-128 key is unavailable or invalid; check key access and the required 16-byte length") from exc
+                if len(key) != 16:
+                    raise OmniError("HLS AES-128 key must contain exactly 16 bytes")
+                keys.add(key_url)
+        for item in formats:
+            if "is_live" not in item.metadata:
+                pending.append((item.url, ancestry | {target, final_url}))
+    return encrypted
+
+
 def download_stream(media: Media, options: TransferOptions | None = None) -> DownloadResult:
-    """Remux clear HLS/DASH to MKV, restarting interrupted adaptive transfers.
+    """Remux HTTP(S) HLS/DASH to MKV, restarting interrupted adaptive transfers.
 
     HTTP resume and rate limits are not implemented by this backend. Its file
     size bound protects the final output, with small transient muxer overshoot.
@@ -163,6 +241,13 @@ def download_stream(media: Media, options: TransferOptions | None = None) -> Dow
         if existing is not None:
             return existing
         _ffmpeg()
+        from urllib.parse import urlsplit
+        is_hls = media.metadata.get("protocol") == "hls" or media.ext.lower() == "m3u8" or urlsplit(media.url).path.lower().endswith(".m3u8")
+        if is_hls:
+            encrypted = _preflight_hls(media, options, headers)
+            if encrypted:
+                arguments[1] += ",crypto"
+                converted = replace(converted, metadata={**converted.metadata, "encryption": "AES-128"})
         temporary = _temporary(destination)
         try:
             _execute(arguments, temporary, options.max_filesize, strict=True, cancel_event=options.cancel_event)

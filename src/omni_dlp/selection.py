@@ -50,17 +50,22 @@ def _number(value) -> float | None:
         return None
 
 
-def _quantity(value: str) -> float:
-    match = re.fullmatch(r"([+-]?(?:\d+(?:\.\d*)?|\.\d+))\s*([kKmMgGtTpPeE]?(?:i?[bB])?)", value)
+def _quantity(value: str, *, sort_target: bool = False) -> float:
+    match = re.fullmatch(r"([+-]?(?:\d+(?:\.\d*)?|\.\d+))\s*([KMGTPEZY]iB?|[kKmMgGtTpPeEzZyY][bB]?|[bB]?)", value)
     if not match:
         raise OmniError("Invalid numeric format value")
     number = float(match[1])
-    suffix = match[2].upper().removesuffix("B").removesuffix("I")
-    if suffix:
-        number *= 1024 ** ("KMGTPE".index(suffix) + 1)
+    suffix = match[2]
+    if suffix and suffix not in {"b", "B"}:
+        # Filters inherit upstream's case-sensitive legacy sizes: k/kB are
+        # binary, while K/KB/kb/Kb are decimal. Bare size-sort suffixes have a
+        # separate, uniformly binary dialect. Explicit sort units are native.
+        binary = ("i" in suffix or suffix[0].islower() and not suffix.endswith("b")
+                  or sort_target and len(suffix) == 1)
+        number *= (1024 if binary else 1000) ** ("KMGTPEZY".index(suffix[0].upper()) + 1)
     if not math.isfinite(number):
         raise OmniError("Format values must be finite")
-    return number
+    return round(number) if suffix else number
 
 
 def _field(fmt: Format, name: str):
@@ -168,7 +173,8 @@ def _target(field: str, text: str):
         raise OmniError("Unknown dynamic-range sorting target")
     if field == "id":
         raise OmniError("Format ID sorting does not support targets")
-    return _quantity(text)
+    number = _quantity(text, sort_target=True)
+    return round(number) if field in {"filesize", "fs_approx", "size"} else number
 
 
 @dataclass(frozen=True)

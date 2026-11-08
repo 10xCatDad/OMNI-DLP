@@ -21,9 +21,19 @@ unplayable tracks can return its available tracks with incomplete coverage marke
 An album with no public audio raises an actionable error. Track pages cannot
 silently select a different track from a multi-entry player response.
 
+Metadata-only extraction can retain a public track record with a title even when
+its audio is unavailable. It preserves album indices, cover artwork, and available
+track or album description text. Such records have no format candidates and carry
+`metadata_only` and `formats_required`; the normal download pipeline rejects them
+instead of saving the source page as audio. Missing player data, browser challenges,
+malformed entries, and account-access failures remain errors. Unavailable track IDs
+still indicate that audio coverage is incomplete. This mode does not unlock streams.
+
 Fixture tests exercise track/album data, multiple formats, ordered collections,
 missing streams, bounds, covers, malformed JSON, non-HTTP URLs, foreign-origin
 credential exclusion, and an actual local HTTP extraction/transfer round trip.
+Metadata-only tests also verify unavailable-track ordering, description precedence,
+unchanged player errors, and rejection before main-file transfer.
 
 Live check on 2026-11-07: the public [FTL album page](https://benprunty.bandcamp.com/album/ftl)
 was visible through the web research service, but native HTTP received a

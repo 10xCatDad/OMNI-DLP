@@ -30,6 +30,8 @@ from .models import DownloadResult, Media, OmniError
 _CHUNK = 64 * 1024
 _RESERVED = re.compile(r"^(?:CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\.|$)", re.I)
 _TEMPLATE = re.compile(r"%\((\w+)\)(?:0?(\d+))?([sd])")
+OUTPUT_SIDECARS = ("", ".part", ".part.json", ".omni.json", ".omni.lock", ".info.json",
+                   ".info.json.omni.json", ".info.json.omni.lock")
 
 
 @dataclass

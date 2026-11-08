@@ -64,8 +64,14 @@ bv[format_id^=video-][ext!=webm]
 ba[language^="en"][format_note!*="description"]
 ```
 
-Numeric comparisons are `=`, `!=`, `<`, `<=`, `>`, and `>=`. Byte-size suffixes
-use powers of 1024, for example `50M` or `1GiB`. Numeric fields include dimensions,
+Numeric comparisons are `=`, `!=`, `<`, `<=`, `>`, and `>=`. Filter size suffixes
+are case-sensitive: `1K`/`1KB` = 1000 and `1M`/`1MB` = 1000000;
+`1Ki`/`1KiB` = 1024 and `1Mi`/`1MiB` = 1048576. Upstream's legacy lowercase
+forms are preserved: `1k`/`1kB` = 1024, but `1kb`/`1Kb` = 1000. The same rules
+apply through `Y` (yotta). A standalone `B`/`b` byte suffix is a native extension.
+Sizes round to the nearest whole byte, including ties to an even integer;
+unsuffixed numbers retain decimals. Malformed unit case such as `kiB` raises an
+error. Numeric fields include dimensions,
 framerate, bitrate, filesize/approximate filesize, duration, sample rate, audio
 channels, quality, and source/language preferences. Unknown or non-finite values
 fail numeric filters unless `?` follows the operator, such as `[height<=?720]`.
@@ -99,6 +105,11 @@ extractor values; `lang` is not alphabetical language-name sorting.
 - `vcodec:avc` prefers the codec rank at or below H.264; codec-family aliases
   such as `avc1`, `hvc1`, and `av01` are recognized.
 - `codec:avc:mp4a` supplies separate video/audio preferences.
+
+Size-sort targets use upstream's separate binary convention for bare suffixes:
+`filesize:1K` and `filesize:1k` both target 1024 bytes. As a native extension,
+explicit byte suffixes also work in sort targets and follow filter rules:
+`filesize:1KB` targets 1000 bytes and `filesize:1KiB` targets 1024 bytes.
 
 Unknown values rank below known values even for ascending sorts. `hasvid` and
 `ie_pref` retain highest priority. Remaining default fields break ties after

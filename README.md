@@ -2,7 +2,9 @@
 
 Download images, audio, video, documents, archives, fonts, models, and other HTTP files through one media-neutral interface.
 
-**Status: early alpha, incomplete rewrite.** The native core is new Python code with no runtime dependencies. It includes partial native implementations for YouTube, Vimeo, Bandcamp, Internet Archive, and Wikimedia, plus format selection and multistream merging. It does **not** yet replace yt-dlp's full site library or option surface. An explicit optional `compat` command runs yt-dlp unchanged while native coverage grows. Delegation is not native feature parity.
+**Status: early alpha, incomplete rewrite.** The native core is new Python code with no runtime dependencies. It includes partial native implementations for YouTube, Vimeo, Bandcamp, Internet Archive, Wikimedia, Reddit, and SoundCloud. Native operations include format and collection selection, multistream merging, media sidecars, and metadata embedding. It does **not** yet replace yt-dlp's full site library or option surface. An explicit optional `compat` command runs yt-dlp unchanged while native coverage grows. Delegation is not native feature parity.
+
+See the [0.3 round report](docs/round-3.md) for completed work, remaining gaps, and the next implementation priorities.
 
 ## Install
 
@@ -21,7 +23,7 @@ omni-dlp compat --help
 omni-dlp compat -f 'bv*+ba/b' --write-subs 'https://example.org/watch/123'
 ```
 
-FFmpeg must be on `PATH` for HLS/DASH and audio conversion or container remuxing. Install it with your operating system's package manager. Direct file downloads and page discovery do not require it.
+FFmpeg must be on `PATH` for HLS/DASH, audio conversion, and container remuxing. Metadata embedding also requires ffprobe. Install these with your operating system's package manager. Direct file downloads and page discovery do not require them.
 
 ## Native usage
 
@@ -44,8 +46,18 @@ omni-dlp -a urls.txt --download-archive archive.sqlite --manifest downloads.json
 # Convert an audio file, preserving the original
 omni-dlp 'https://example.org/song.flac' -x --audio-format aiff
 
-# Clear, finite HLS/DASH stream
+# Finite HLS, including ordinary AES-128, or clear DASH
 omni-dlp 'https://example.org/stream.m3u8'
+
+# Select source positions and filter by available upload dates
+omni-dlp --playlist-items '1:10:2' --dateafter 20250101 'https://example.org/podcast.xml'
+
+# Download captions, artwork, and descriptions without the main media
+omni-dlp --skip-download --write-subs --sub-langs 'en.*,ja' \
+  --write-thumbnail --write-description --write-info-json 'https://example.org/watch/123'
+
+# Retain the source and write a separate copy with tags, chapters, and subtitles
+omni-dlp --embed-metadata --embed-chapters --embed-subs 'https://example.org/watch/123'
 ```
 
 These are example addresses. `--dump-json` and `--simulate` also perform discovery without downloading. `--progress-json` writes flushed item-completion and error events to stderr. This is not byte-level progress reporting. `--ignore-errors` continues other items but returns a nonzero exit status if anything fails.
@@ -72,11 +84,30 @@ Use `%(format_id)s` in custom filenames to distinguish representations.
 See [format selection](docs/format-selection.md) and [native site coverage](docs/sites/README.md)
 for the exact supported grammar, URLs, live evidence, and limitations.
 
-Internet Archive and Wikimedia have verified live media downloads. Vimeo
+Internet Archive, Wikimedia, Reddit hosted video, and SoundCloud audio have verified live media downloads. Vimeo
 metadata, thumbnails and captions were verified; the sampled video was protected.
 YouTube returned HTTP 429 and Bandcamp served a browser challenge during live
 checks. Their independently implemented parsers have fixture tests, but live
 playback is not claimed. No native path silently falls back to yt-dlp.
+
+Native [collection selection](docs/collection-selection.md) preserves source
+positions and rejects ambiguous end-relative requests on incomplete collections.
+[Sidecar downloading](docs/assets.md) supports manual and automatic captions,
+language/format preferences, thumbnails, and descriptions. Use `--list-subs` or
+`--list-thumbnails` to inspect available assets without downloading. The default
+subtitle preference is `vtt/srt/best`. Subtitle conversion and thumbnail embedding
+are not implemented.
+
+[Metadata embedding](docs/metadata.md) writes a verified `.embedded` sibling and
+keeps the source and downloaded captions. Tags, chapters, and subtitle embedding
+are independent flags. [Info JSON](docs/info-json.md) uses ownership receipts so
+reruns can refresh tool-generated metadata while preserving user-edited files.
+[HLS AES-128](docs/hls.md) handles ordinary identity keys; DRM and SAMPLE-AES remain
+unsupported. Its initial manifest checks do not isolate later FFmpeg network reads.
+
+The experimental YouTube signature compiler reproduces pinned research vectors
+but is deliberately disconnected from downloading. Encrypted signatures, `n`
+challenges, PO tokens, and SABR remain unsupported in native YouTube extraction.
 
 ## Configuration
 

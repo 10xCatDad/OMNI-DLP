@@ -1,12 +1,50 @@
 # YouTube challenge research
 
-Research date: 2026-11-07. Status: **verified signature-transform feasibility;
-automatic solver and live playback remain unimplemented/unverified**.
+Research date: 2026-11-07. Status: **experimental native signature compiler;
+not connected to downloads, no live playback verification**.
 
-The next native implementation should compile recognized signature operations
-into a small, bounded transform plan. A separate interpreter or isolated runtime
-is needed for the more complex `n` challenge. This research did not execute
-downloaded JavaScript, import yt-dlp, install a runtime, or modify the extractor.
+`omni_dlp.youtube_challenges` now compiles recognized signature operations into
+immutable, bounded transform plans. It automatically derives both plans below
+and matches all three public oracle vectors. No downloaded JavaScript is
+executed, no yt-dlp implementation is imported, and no runtime was installed.
+A separate implementation is still needed for the more complex `n` challenge.
+
+The compiler remains an experimental module outside the extractor's download
+path. **A unique recognizable transform is not proof that the player uses it for
+signatures.** Establishing that role at the actual signature call site is a
+remaining integration requirement. Its subset assumes standard string/array
+intrinsics. It rejects several explicit native-method mutations and dynamic
+evaluation patterns, but does not prove arbitrary whole-program JavaScript
+equivalence or model indirect global changes. Passing a prototype to an unrelated
+mutating function is one example outside that analysis. These are documented
+limitations, not claims that all incorrect or unsafe patterns are rejected.
+
+## Implemented and tested this round
+
+- Bounded tokenization and structural expression analysis, including literal
+  string tables, same-source constant dispatcher arguments and XOR arithmetic.
+- Complete recognition of reverse, prefix removal and modulo-swap helpers;
+  typed immutable plans, source digests and UTF-16 application semantics.
+- Rejection of ambiguous candidates, changed/escaped helpers, conditional or
+  unrelated-scope declarations, detached methods, malformed syntax, unsupported
+  dataflow, automatic-semicolon pitfalls and exhausted resource budgets.
+- 142 independently authored offline tests. Review regressions cover helper
+  return values, slice aliases, variable redeclarations, primitive arguments,
+  all JavaScript line terminators and recursion limits.
+- An explicit optional corpus verifier that accepts local assets or downloads
+  the two hash-pinned public assets. It executes only OMNI-DLP's own compiler.
+
+With the project installed, run:
+
+```sh
+python -m pytest tests/test_youtube_challenges.py
+python scripts/verify_youtube_signatures.py --download
+```
+
+For an existing corpus, replace `--download` with `--player-directory DIR`.
+The verifier checks asset hashes and all three expected signatures. It does not
+test a watch response, resolve `n`, or request playable media bytes. Full player
+sources and live signed URLs are not committed.
 
 ## Observed evidence
 
@@ -49,8 +87,9 @@ Useful reproduction landmarks in these exact bytes:
   Its three helpers implement swap, prefix splice and reverse.
 
 These names and constants are evidence, not production identifiers to hardcode.
-Three matching examples establish a viable transform subset, not an automatic
-extractor, a general JavaScript interpreter, or active-player compatibility.
+The compiler derives them from each source and contains no player-ID or
+hash-to-plan shortcuts. Three matching examples establish corpus compatibility,
+not a general JavaScript interpreter or active-player compatibility.
 
 The candidate `n` branch in the first player is substantially richer: a large
 heterogeneous array, regular-expression literals, nested function references,
@@ -58,7 +97,7 @@ mutable arrays and numeric dispatch. No `n` transform was independently verified
 Solving signatures alone therefore leaves meaningful playback gaps, including
 `n`, proof-of-origin tokens, client eligibility and SABR transport.
 
-## Proposed native signature compiler
+## Architecture and remaining integration work
 
 1. Fetch only a validated YouTube player URL obtained from the requested page;
    bound response size and redirects. Cache source and plans by complete source
@@ -66,10 +105,10 @@ Solving signatures alone therefore leaves meaningful playback gaps, including
 2. Tokenize JavaScript with string/comment/template/regex awareness and strict
    source, nesting and token budgets. Decode only literal string-table creation.
    Do not use `eval`, Python execution, or substring brace counting as a parser.
-3. Find split/array-transform/join branches structurally. Solve a dispatcher XOR
-   key from table-index constraints, then require every relevant property and
-   numeric argument to resolve consistently. Validate the branch's input/output
-   dataflow and call-site constants; reject multiple plausible branches.
+3. Find split/array-transform/join branches structurally. Resolve dispatcher
+   constants from literal arguments at call sites in the same source, then
+   evaluate the selected branch and its table-index arithmetic. Require valid
+   input/output dataflow; reject multiple plausible plans.
 4. Parse each referenced helper completely. Accept only exact AST shapes for
    reverse, prefix splice/slice and modulo-index swap. Reject extra statements,
    unknown calls, getters, global references, or mutation outside the array.
@@ -81,12 +120,12 @@ Solving signatures alone therefore leaves meaningful playback gaps, including
    the existing omission diagnostics. Apply the result to the cipher's specified
    signature query key without disturbing other query parameters.
 
-Suggested boundary:
+Implemented signatures, with unsupported input reported by exception:
 
 ```text
-compile_signature(player_source) -> SignaturePlan | UnsupportedChallenge
-apply_signature(plan, signature) -> transformed_signature
-solve_n(player_source, n_value) -> transformed_n | UnsupportedChallenge
+compile_signature(player_source) -> SignaturePlan
+apply_signature(plan, signature) -> str
+# Both may raise UnsupportedChallenge. There is no solve_n implementation.
 ```
 
 Keep compilation separate from application. If an optimization caches a mapping
@@ -148,7 +187,9 @@ to the runner. The runtime cannot need network access to transform a string.
   read before claiming live support. Until available, report fixture compatibility
   and the exact unavailable challenges separately.
 
-Recommended next implementation: the native signature compiler and its corpus
-tests. It has concrete evidence of viability and adds no JavaScript runtime
-dependency. Continue the `n` interpreter investigation in parallel; full native
-YouTube parity is not achieved by this research alone.
+Remaining work: establish actual signature-role linkage, address indirect
+prototype/global semantics, validate player URL discovery and bounded fetching,
+integrate a reviewed compiler into extraction, expand player-family coverage, and
+implement `n` handling. Cache design and runtime isolation above are proposals,
+not shipped features. Full native YouTube parity is not achieved by this compiler
+alone.

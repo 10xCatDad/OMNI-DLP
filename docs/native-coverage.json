@@ -13,7 +13,22 @@
       "status": "partial_independent_implementation",
       "tests": "tests/test_youtube.py",
       "coverage_document": "docs/sites/youtube.md",
-      "live_evidence": "blocked_http_429"
+      "live_evidence": "blocked_http_429",
+      "native_surfaces": [
+        "individual_public_video_metadata",
+        "directly_usable_player_formats",
+        "public_assets",
+        "metadata_only_without_playable_formats"
+      ],
+      "known_gaps": [
+        "encrypted_s_signatures",
+        "n_challenges",
+        "po_tokens",
+        "sabr",
+        "playlists_and_channels",
+        "authentication",
+        "protected_playback"
+      ]
     },
     {
       "module": "vimeo",
@@ -24,7 +39,18 @@
       "status": "partial_independent_implementation",
       "tests": "tests/test_vimeo.py",
       "coverage_document": "docs/sites/vimeo.md",
-      "live_evidence": "metadata_image_subtitle_verified_video_protected"
+      "live_evidence": "metadata_image_subtitle_verified_video_protected",
+      "native_surfaces": [
+        "public_and_unlisted_video_config",
+        "progressive_and_manifest_descriptors",
+        "public_assets",
+        "metadata_only_without_playable_formats"
+      ],
+      "known_gaps": [
+        "private_login_and_password_flows",
+        "collections",
+        "protected_video"
+      ]
     },
     {
       "module": "bandcamp",
@@ -36,7 +62,18 @@
       "status": "partial_independent_implementation",
       "tests": "tests/test_bandcamp.py",
       "coverage_document": "docs/sites/bandcamp.md",
-      "live_evidence": "blocked_browser_challenge"
+      "live_evidence": "blocked_browser_challenge",
+      "native_surfaces": [
+        "embedded_track_and_album_data",
+        "available_audio",
+        "artwork",
+        "metadata_only_without_playable_formats"
+      ],
+      "known_gaps": [
+        "browser_challenges",
+        "purchase_and_account_access",
+        "complete_discographies"
+      ]
     },
     {
       "module": "archive",
@@ -59,6 +96,214 @@
       "tests": "tests/test_wikimedia.py",
       "coverage_document": "docs/sites/wikimedia.md",
       "live_evidence": "image_audio_video_category_verified"
+    },
+    {
+      "module": "reddit",
+      "upstream_handlers": [
+        "RedditIE"
+      ],
+      "name": "Reddit",
+      "status": "partial_independent_implementation",
+      "tests": "tests/test_reddit.py",
+      "coverage_document": "docs/sites/reddit.md",
+      "live_evidence": "hosted_hls_video_audio_download_and_merge_verified_post_json_blocked",
+      "native_surfaces": [
+        "public_post_json",
+        "galleries_and_original_images",
+        "gif_and_mp4_gallery_variants",
+        "hosted_hls_dash_progressive",
+        "bounded_embedded_crossposts",
+        "public_metadata_only"
+      ],
+      "known_gaps": [
+        "live_public_post_and_gallery_verification",
+        "oauth_and_private_posts",
+        "feeds_and_search",
+        "share_redirects",
+        "external_webpage_delegation"
+      ]
+    },
+    {
+      "module": "soundcloud",
+      "upstream_handlers": [
+        "SoundcloudIE",
+        "SoundcloudSetIE"
+      ],
+      "name": "SoundCloud",
+      "status": "partial_independent_implementation",
+      "tests": "tests/test_soundcloud.py",
+      "coverage_document": "docs/sites/soundcloud.md",
+      "live_evidence": "public_hls_audio_download_verified_bounded_set_enumeration_verified",
+      "native_surfaces": [
+        "public_tracks",
+        "bounded_public_sets",
+        "public_short_links",
+        "progressive_and_clear_hls",
+        "advertised_artwork",
+        "public_metadata_only"
+      ],
+      "known_gaps": [
+        "private_and_account_access",
+        "previews_and_protected_variants",
+        "profiles_and_search",
+        "original_upload_downloads",
+        "complete_set_playback_validation"
+      ]
+    }
+  ],
+  "native_components": [
+    {
+      "module": "selection",
+      "status": "substantial_subset",
+      "coverage_document": "docs/format-selection.md",
+      "tests": [
+        "tests/test_selection.py"
+      ],
+      "scope": [
+        "format_expression_parser",
+        "filters_and_unknown_values",
+        "group_merges",
+        "sort_preferences",
+        "separate_filter_and_sort_size_units"
+      ],
+      "known_gaps": [
+        "mergeall_and_multistream_policies",
+        "regex_filters",
+        "force_sort",
+        "extractor_sort_overrides",
+        "network_format_checks"
+      ]
+    },
+    {
+      "module": "collection_selection",
+      "status": "substantial_subset",
+      "coverage_document": "docs/collection-selection.md",
+      "tests": [
+        "tests/test_collection_selection.py",
+        "tests/test_collection_engine.py"
+      ],
+      "scope": [
+        "inclusive_ranges_and_slices",
+        "known_total_negative_indices",
+        "reverse_and_seeded_random_order",
+        "date_ranges",
+        "scalar_match_filters",
+        "source_indices_and_incomplete_enumeration"
+      ],
+      "known_gaps": [
+        "regex_or_interactive_match_filters",
+        "boolean_or",
+        "duplicate_source_positions",
+        "extractor_pagination_completion"
+      ],
+      "intentional_differences": [
+        "bare_decimal_match_values_preserve_fractions",
+        "iso_date_options"
+      ]
+    },
+    {
+      "module": "assets",
+      "status": "implemented_subset",
+      "coverage_document": "docs/assets.md",
+      "tests": [
+        "tests/test_assets.py",
+        "tests/test_asset_pipeline.py"
+      ],
+      "scope": [
+        "manual_and_automatic_subtitle_sidecars",
+        "bounded_language_patterns",
+        "subtitle_format_fallback",
+        "selected_or_all_thumbnails",
+        "utf8_descriptions",
+        "sidecar_only_downloads"
+      ],
+      "known_gaps": [
+        "full_regex_language_syntax",
+        "standalone_subtitle_conversion",
+        "translation",
+        "cover_art_embedding"
+      ]
+    },
+    {
+      "module": "metadata",
+      "status": "implemented_subset_via_ffmpeg_and_ffprobe",
+      "coverage_document": "docs/metadata.md",
+      "tests": [
+        "tests/test_metadata.py",
+        "tests/test_asset_pipeline.py"
+      ],
+      "scope": [
+        "allowlisted_descriptive_tags",
+        "validated_chapters",
+        "mp4_and_matroska_text_subtitle_embedding",
+        "retained_verified_output"
+      ],
+      "known_gaps": [
+        "all_containers_and_codecs",
+        "thumbnail_embedding",
+        "universal_site_metadata_discovery"
+      ]
+    },
+    {
+      "module": "streams",
+      "status": "implemented_subset_via_ffmpeg",
+      "coverage_document": "docs/hls.md",
+      "tests": [
+        "tests/test_manifests.py",
+        "tests/test_streams.py",
+        "tests/test_merge.py"
+      ],
+      "scope": [
+        "clear_hls_and_dash",
+        "hls_audio_groups",
+        "ordinary_identity_aes128_hls",
+        "bounded_initial_manifest_and_key_preflight"
+      ],
+      "known_gaps": [
+        "sample_aes_and_drm",
+        "authenticated_adaptive_forwarding",
+        "fragment_resume",
+        "native_fragment_retry_and_rate_controls",
+        "hls_subtitle_rendition_extraction",
+        "immutable_manifest_snapshot"
+      ]
+    },
+    {
+      "module": "infojson",
+      "status": "implemented",
+      "coverage_document": "docs/info-json.md",
+      "tests": [
+        "tests/test_infojson.py"
+      ],
+      "scope": [
+        "bounded_json_serialization",
+        "content_and_identity_receipts",
+        "verified_owned_updates",
+        "sidecar_only_metadata_output"
+      ],
+      "known_gaps": [
+        "two_file_transactional_publication",
+        "full_platform_filesystem_validation"
+      ],
+      "caller_contract": "caller_must_supply_redacted_public_record"
+    }
+  ],
+  "research_components": [
+    {
+      "module": "youtube_challenges",
+      "status": "experimental_disconnected_prototype",
+      "coverage_document": "docs/research/YOUTUBE-CHALLENGES.md",
+      "tests": [
+        "tests/test_youtube_challenges.py"
+      ],
+      "external_validation": "three_pinned_signature_vectors_across_two_public_players",
+      "runtime_integration": false,
+      "known_gaps": [
+        "signature_role_binding",
+        "indirect_javascript_prototype_semantics",
+        "n_challenges",
+        "current_live_playback_validation"
+      ]
     }
   ]
 }

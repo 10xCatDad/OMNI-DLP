@@ -26,6 +26,47 @@ class QuietHandler(http.server.SimpleHTTPRequestHandler):
 
 
 class StreamValidationTests(unittest.TestCase):
+    def test_exact_benign_hls_mime_diagnostic_is_allowed_only_on_success(self):
+        accepted = [
+            b"mime type is not rfc8216 compliant\n",
+            b"[hls @ 0x123abc] mime type is not rfc8216 compliant\n",
+            b"[hls @ 000001ABCDEF] mime type is not rfc8216 compliant\r\n",
+        ]
+        for diagnostic in accepted:
+            with self.subTest(diagnostic=diagnostic), tempfile.TemporaryDirectory() as folder:
+                target = Path(folder) / "result.mkv"
+                target.write_bytes(b"fixture-media")
+                def spawn(*_args, **kwargs):
+                    kwargs["stderr"].write(diagnostic)
+                    process = unittest.mock.Mock()
+                    process.wait.return_value = process.poll.return_value = 0
+                    return process
+                with patch("omni_dlp.streams.subprocess.Popen", side_effect=spawn), patch("omni_dlp.streams._ffmpeg", return_value="ffmpeg"):
+                    stream_module._execute([], target, strict=True)
+
+    def test_benign_mime_warning_does_not_hide_failures_or_other_diagnostics(self):
+        cases = [
+            (1, True, b"mime type is not rfc8216 compliant\n"),
+            (0, False, b"mime type is not rfc8216 compliant\n"),
+            (0, True, b"[hls @ 0x123] mime type is not rfc8216 compliant; missing segment\n"),
+            (0, True, b"[http @ 0x123] mime type is not rfc8216 compliant\n"),
+            (0, True, b"mime type is not rfc8216 compliant\nFailed to open segment\n"),
+            (0, True, b"mime type is not rfc8216 compliant\n\n"),
+            (0, True, b"mime type is not rfc8216 compliant\n" * 3000),
+        ]
+        for code, strict, diagnostic in cases:
+            with self.subTest(code=code, strict=strict, diagnostic=diagnostic[:80]), tempfile.TemporaryDirectory() as folder:
+                target = Path(folder) / "result.mkv"
+                target.write_bytes(b"fixture-media")
+                def spawn(*_args, **kwargs):
+                    kwargs["stderr"].write(diagnostic)
+                    process = unittest.mock.Mock()
+                    process.wait.return_value = process.poll.return_value = code
+                    return process
+                with patch("omni_dlp.streams.subprocess.Popen", side_effect=spawn), patch("omni_dlp.streams._ffmpeg", return_value="ffmpeg"):
+                    with self.assertRaises(OmniError):
+                        stream_module._execute([], target, strict=strict)
+
     def test_rejects_credentials_and_untrusted_protocols(self):
         for url in ("file:///tmp/private", "https://user:secret@example.com/live.m3u8"):
             with self.subTest(url=url), self.assertRaises(OmniError):
@@ -72,6 +113,17 @@ class AdaptiveIntegrationTests(unittest.TestCase):
         ]
         subprocess.run(base + ["-f", "hls", "-hls_time", "0.5", "-hls_playlist_type", "vod", str(cls.root / "stream.m3u8")], check=True, capture_output=True)
         subprocess.run(base + ["-f", "dash", "-seg_duration", "0.5", str(cls.root / "stream.mpd")], check=True, capture_output=True)
+        # Public fixture keys are temporary random bytes, never source assets.
+        for suffix, byte, iv in (("a", 17, "00000000000000000000000000000001"),
+                                 ("b", 34, "00000000000000000000000000000002"),
+                                 ("c", 51, None)):
+            key = cls.root / ("key-" + suffix + ".bin")
+            key.write_bytes(bytes([byte]) * 16)
+            info = cls.root / ("key-" + suffix + ".txt")
+            info.write_text(key.name + "\n" + str(key) + "\n" + (iv + "\n" if iv else ""))
+            subprocess.run(base + ["-f", "hls", "-hls_time", "0.5", "-hls_playlist_type", "vod",
+                "-hls_key_info_file", str(info), str(cls.root / ("encrypted-" + suffix + ".m3u8"))],
+                check=True, capture_output=True)
         handler = functools.partial(QuietHandler, directory=cls.fixture.name)
         cls.server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler)
         cls.thread = threading.Thread(target=cls.server.serve_forever, daemon=True)
@@ -292,6 +344,113 @@ class AdaptiveIntegrationTests(unittest.TestCase):
         with self.assertRaises(OmniError):
             download_stream(self.media("forbidden.m3u8"), self.options)
         self.assert_no_output()
+
+    def test_valid_hls_with_octet_stream_mime_downloads_successfully(self):
+        class OctetStreamHandler(QuietHandler):
+            def guess_type(self, path):
+                if path.endswith(".m3u8"):
+                    return "application/octet-stream"
+                return super().guess_type(path)
+        handler = functools.partial(OctetStreamHandler, directory=str(self.root))
+        server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            media = self.media("stream.m3u8")
+            media.url = f"http://127.0.0.1:{server.server_port}/stream.m3u8"
+            result = download_stream(media, self.options)
+            self.assertEqual({item["codec_type"] for item in self.probe(result.path)}, {"audio", "video"})
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join()
+
+    def test_ordinary_aes128_hls_download_decodes_audio_and_video(self):
+        result = download_stream(self.media("encrypted-a.m3u8"), self.options)
+        self.assertEqual({item["codec_type"] for item in self.probe(result.path)}, {"audio", "video"})
+        decoded = subprocess.run(["ffmpeg", "-v", "error", "-i", result.path, "-f", "null", "-"], capture_output=True)
+        self.assertEqual(decoded.returncode, 0, decoded.stderr.decode())
+        self.assertEqual(decoded.stderr, b"")
+        self.assertEqual(result.media.metadata["encryption"], "AES-128")
+        receipt = Path(result.path + ".omni.json").read_text()
+        self.assertNotIn("key-a.bin", receipt)
+        self.assertTrue(download_stream(self.media("encrypted-a.m3u8"), self.options).skipped)
+
+    def test_aes128_implicit_sequence_number_iv(self):
+        import re
+        original = (self.root / "encrypted-c.m3u8").read_text()
+        implicit = re.sub(r",IV=0x[0-9a-fA-F]+", "", original)
+        (self.root / "implicit-iv.m3u8").write_text(implicit)
+        result = download_stream(self.media("implicit-iv.m3u8"), self.options)
+        decoded = subprocess.run(["ffmpeg", "-v", "error", "-i", result.path, "-f", "null", "-"], capture_output=True)
+        self.assertEqual(decoded.returncode, 0)
+        self.assertEqual(decoded.stderr, b"")
+        self.assertEqual({item["codec_type"] for item in self.probe(result.path)}, {"audio", "video"})
+
+    def test_aes128_key_rotation_and_explicit_iv(self):
+        first = (self.root / "encrypted-a.m3u8").read_text().splitlines()
+        second = (self.root / "encrypted-b.m3u8").read_text().splitlines()
+        key_b = next(line for line in second if line.startswith("#EXT-X-KEY:"))
+        first_segment = first.index("encrypted-a0.ts")
+        remaining = second[second.index("encrypted-b0.ts") + 1:]
+        rotating = "\n".join(first[:first_segment + 1] + [key_b] + remaining) + "\n"
+        (self.root / "rotating.m3u8").write_text(rotating)
+        result = download_stream(self.media("rotating.m3u8"), self.options)
+        self.assertEqual({item["codec_type"] for item in self.probe(result.path)}, {"audio", "video"})
+        decoded = subprocess.run(["ffmpeg", "-v", "error", "-i", result.path, "-f", "null", "-"], capture_output=True)
+        self.assertEqual(decoded.returncode, 0)
+        self.assertEqual(decoded.stderr, b"")
+
+    def test_aes128_missing_and_wrong_length_keys_fail_without_output(self):
+        original = (self.root / "encrypted-a.m3u8").read_text()
+        (self.root / "short-key.bin").write_bytes(b"short")
+        for index, name in enumerate(("missing-key.bin", "short-key.bin")):
+            manifest = f"missing-key-{index}.m3u8"
+            (self.root / manifest).write_text(original.replace("key-a.bin", name))
+            with self.subTest(name=name), self.assertRaisesRegex(OmniError, "AES-128 key"):
+                download_stream(self.media(manifest), self.options)
+            self.assert_no_output()
+
+    def test_wrong_aes128_key_does_not_publish_corrupt_media(self):
+        (self.root / "wrong-key.bin").write_bytes(bytes(16))
+        original = (self.root / "encrypted-a.m3u8").read_text()
+        (self.root / "wrong-key.m3u8").write_text(original.replace("key-a.bin", "wrong-key.bin"))
+        with self.assertRaises(OmniError):
+            download_stream(self.media("wrong-key.m3u8"), self.options)
+        self.assert_no_output()
+
+    def test_unsafe_key_protocols_are_rejected_before_ffmpeg_starts(self):
+        original = (self.root / "encrypted-a.m3u8").read_text()
+        for key_url in ((self.root / "key-a.bin").as_uri(), "data:text/plain,example", "crypto:file:///key", "tcp://localhost:9"):
+            (self.root / "unsafe-key.m3u8").write_text(original.replace("key-a.bin", key_url))
+            with self.subTest(key_url=key_url), patch("omni_dlp.streams._execute") as execute:
+                with self.assertRaises(OmniError):
+                    download_stream(self.media("unsafe-key.m3u8"), self.options)
+                execute.assert_not_called()
+            self.assert_no_output()
+
+    def test_sample_aes_is_rejected_before_ffmpeg_starts(self):
+        original = (self.root / "encrypted-a.m3u8").read_text()
+        (self.root / "sample-aes.m3u8").write_text(original.replace("METHOD=AES-128", "METHOD=SAMPLE-AES"))
+        with patch("omni_dlp.streams._execute") as execute:
+            with self.assertRaisesRegex(OmniError, "Unsupported HLS encryption"):
+                download_stream(self.media("sample-aes.m3u8"), self.options)
+            execute.assert_not_called()
+        self.assert_no_output()
+
+    def test_master_aes128_preflight_and_crypto_only_when_needed(self):
+        (self.root / "encrypted-master.m3u8").write_text('#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=100000,RESOLUTION=64x64\nencrypted-a.m3u8\n')
+        real_execute = stream_module._execute
+        commands = []
+        def execute(arguments, *args, **kwargs):
+            commands.append(arguments)
+            return real_execute(arguments, *args, **kwargs)
+        with patch("omni_dlp.streams._execute", side_effect=execute):
+            result = download_stream(self.media("encrypted-master.m3u8"), self.options)
+            download_stream(self.media("stream.m3u8"), self.options)
+        self.assertIn("crypto", commands[0][1].split(','))
+        self.assertNotIn("crypto", commands[1][1].split(','))
+        self.assertEqual(result.media.metadata["encryption"], "AES-128")
 
     def test_missing_segment_does_not_commit_partial_success(self):
         broken = self.root / "broken.m3u8"

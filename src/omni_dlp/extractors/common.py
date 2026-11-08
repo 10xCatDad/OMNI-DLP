@@ -20,6 +20,7 @@ class ExtractorContext:
     max_items: int = 1000
     media_types: set[str] | None = None
     max_document: int = 8 * 1024 * 1024
+    metadata_only: bool = False
 
     def scoped_headers(self, url: str) -> dict[str, str]:
         headers = request_headers(self.headers)
