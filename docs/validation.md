@@ -1,13 +1,13 @@
 # Validation evidence
 
-Validation date: 2026-11-07. This evidence supports the initial alpha only. It does
+Validation date: 2026-11-07. This evidence covers the native core and the partial extractor/format expansion in 0.2.0a1. It does
 not establish complete yt-dlp parity or verify all upstream sites.
 
 ## Local integration tests
 
-The final local suite passes 160 tests plus 29 unittest subtests on Python 3.12.
-Earlier full runs also passed on Python 3.11 and 3.14; the final commit is checked
-by the linked CI matrix. Ruff checks and wheel/source builds pass. A clean wheel
+The 0.2.0a1 local suite passes 537 tests plus 29 unittest subtests on Python 3.12.
+The initial 0.1.0a1 platform matrix passed. The current release links its own
+final-commit CI evidence; earlier success does not establish new-code coverage. Ruff checks and wheel/source builds pass. A clean wheel
 installation was verified without yt-dlp installed.
 
 A real CLI SIGINT subprocess test verifies prompt exit 130 during an active
@@ -31,7 +31,26 @@ The CI matrix runs Python 3.11 and 3.14 on Linux, Windows, and macOS. FFmpeg is
 explicitly installed on Linux. Media tests skip on a runner without FFmpeg, so a
 passing job with skipped tests must not be described as full media validation.
 
-## Live smoke checks
+## Native extractor and selection expansion
+
+The native format parser has fixed differential cases and a seeded matrix of
+864 comparisons against the optional installed upstream package. These cover the
+documented subset of grammar and ranking, not all upstream combinations. Native
+runtime paths do not import that package. Tests also download and merge actual
+separate video, audio and subtitle fixtures using FFmpeg.
+
+Integration regressions cover signed-URL renewal, per-format identities, different
+merge containers in archives, archived output/manifest collisions, redirected
+manifest bases, target-scoped headers and continuing after selection failures.
+
+Live checks and exact limitations are recorded [per extractor](sites/README.md).
+The complete native CLI additionally downloaded an Internet Archive MP3 and
+Wikimedia JPEG/WebM using the new registry and selection pipeline. Their hashes
+match the file records in the corresponding site documents. YouTube and Bandcamp
+live playback remain unverified due HTTP 429/browser challenges. Vimeo assets and
+metadata work in the tested example; its sampled video was DRM protected.
+
+## Initial direct-download smoke checks
 
 | Input | Native result | Bytes | SHA-256 |
 | --- | --- | ---: | --- |

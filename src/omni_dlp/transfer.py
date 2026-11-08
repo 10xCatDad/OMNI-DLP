@@ -24,6 +24,7 @@ from urllib.parse import quote, unquote, urlsplit, urlunsplit
 from urllib.request import HTTPCookieProcessor, HTTPRedirectHandler, Request
 from urllib.request import build_opener as _build_opener
 
+from . import __version__
 from .models import DownloadResult, Media, OmniError
 
 _CHUNK = 64 * 1024
@@ -116,7 +117,7 @@ def build_opener(cookies: str | None = None):
 
 
 def request_headers(headers: dict[str, str] | None = None) -> dict[str, str]:
-    result = {"User-Agent": "omni-dlp/0.1", "Accept-Encoding": "identity"}
+    result = {"User-Agent": f"omni-dlp/{__version__}", "Accept-Encoding": "identity"}
     for name, value in (headers or {}).items():
         if not isinstance(name, str) or not re.fullmatch(r"[!#$%&'*+.^_`|~0-9A-Za-z-]+", name):
             raise OmniError("Invalid HTTP header name")
@@ -137,7 +138,7 @@ def request_headers(headers: dict[str, str] | None = None) -> dict[str, str]:
 
 
 def _source_hash(media: Media) -> str:
-    return hashlib.sha256(media.url.encode()).hexdigest()
+    return hashlib.sha256(str(media.metadata.get("resource_id") or media.url).encode()).hexdigest()
 
 
 def _safe_component(value: object) -> str:
@@ -175,6 +176,7 @@ def output_path(media: Media, options: TransferOptions) -> Path:
         "id": media.id or _source_hash(media)[:12],
         "ext": media.ext.lstrip(".") or Path(basename).suffix.lstrip(".") or "bin",
         "kind": media.kind,
+        "format_id": media.metadata.get("format_id", "direct"),
         "playlist_index": media.metadata.get("playlist_index", 1),
     }
 

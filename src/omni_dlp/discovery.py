@@ -19,6 +19,7 @@ from html.parser import HTMLParser
 from pathlib import PurePosixPath
 from urllib.parse import unquote, urldefrag, urljoin, urlsplit
 
+from . import __version__
 from .models import Media, OmniError
 from .transfer import request_url
 from .types import DOCUMENT_MIMES, EXTENSION_KINDS, MANIFEST_MIMES, MEDIA_KINDS, classify, extension
@@ -73,7 +74,7 @@ def _opener(cookies: str | None):
 
 
 def _headers(headers: dict | None) -> dict[str, str]:
-    result = {"User-Agent": "omni-dlp/0.1", "Accept-Encoding": "identity"}
+    result = {"User-Agent": f"omni-dlp/{__version__}", "Accept-Encoding": "identity"}
     for key, value in (headers or {}).items():
         if not isinstance(key, str) or not isinstance(value, str) or not key or any(c in key + value for c in "\r\n"):
             raise OmniError("HTTP headers must be strings without newlines")

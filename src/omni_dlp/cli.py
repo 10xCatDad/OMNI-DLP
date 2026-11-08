@@ -57,6 +57,11 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--write-info-json", action="store_true", help="Write credential-redacted metadata beside downloads")
     p.add_argument("--manifest", help="Append completed download records as flushed JSON lines")
     p.add_argument("--progress-json", action="store_true", help="Emit flushed JSON completion/error events on stderr")
+    p.add_argument("-f", "--format", help="Native format selector: IDs, filters, / fallback, + merge, , multiple outputs")
+    p.add_argument("-S", "--format-sort", help="Comma-separated native format sort keys")
+    p.add_argument("-F", "--list-formats", action="store_true", help="List available representations without downloading")
+    p.add_argument("--list-extractors", action="store_true", help="List native built-in extractor coverage")
+    p.add_argument("--merge-output-format", choices=["mkv", "mp4", "webm", "mov"], default="mkv")
     p.add_argument("-x", "--extract-audio", action="store_true")
     p.add_argument("--audio-format", choices=["mp3", "m4a", "m4b", "aac", "flac", "opus", "ogg", "wav", "aiff"], default="mp3")
     p.add_argument("--remux-video", choices=["mp4", "mkv", "webm", "mov"])
@@ -65,6 +70,11 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--ignore-errors", action="store_true", help="Continue remaining URLs; exit status remains nonzero on failures")
     p.add_argument("-q", "--quiet", action="store_true")
     return p
+
+
+def display_text(value) -> str:
+    """Keep untrusted site metadata from emitting terminal control sequences."""
+    return "".join(char if char.isprintable() else " " for char in str(value))
 
 
 def redact_url(value: str) -> str:
@@ -166,6 +176,12 @@ def main(argv: list[str] | None = None) -> int:
         except (OSError, ValueError, TypeError, argparse.ArgumentTypeError) as exc:
             p.error(f"cannot load configuration ({type(exc).__name__})")
     opts = p.parse_args(args)
+    if opts.list_extractors:
+        from .extractors import BUILTINS
+        for name, description in BUILTINS:
+            print(f"{name}: {description}")
+        print("generic: direct HTTP files, static HTML, RSS/Atom and JSON feeds")
+        return 0
     if opts.retries < 0 or opts.timeout <= 0 or not math.isfinite(opts.timeout):
         p.error("retries must be nonnegative and timeout must be finite and positive")
     if opts.extract_audio and opts.remux_video:
@@ -199,7 +215,8 @@ def main(argv: list[str] | None = None) -> int:
             media_types=set(opts.media_type) if opts.media_type else None, jobs=opts.jobs,
             max_items=opts.max_items, archive=opts.download_archive,
             audio_format=opts.audio_format if opts.extract_audio else None,
-            remux_format=opts.remux_video, plugins=not opts.no_plugins, direct=opts.direct))
+            remux_format=opts.remux_video, plugins=not opts.no_plugins, direct=opts.direct,
+            format=opts.format, format_sort=opts.format_sort, merge_output_format=opts.merge_output_format))
         errors = 0
         def error(media, exc):
             nonlocal errors
@@ -211,6 +228,16 @@ def main(argv: list[str] | None = None) -> int:
             else:
                 print(f"ERROR: {message}", file=sys.stderr, flush=True)
         def complete(result):
+            # An archive hit may refer to an older directory. Validate the
+            # actual result, not only today's planned output paths.
+            actual_paths = {str(Path(result.path + suffix).resolve()).casefold() for suffix in (
+                "", ".part", ".part.json", ".omni.json", ".omni.lock", ".info.json")}
+            if opts.manifest and str(Path(opts.manifest).resolve()).casefold() in actual_paths:
+                raise OmniError("Manifest path overlaps the actual media output or sidecar")
+            if opts.download_archive:
+                archive = str(Path(opts.download_archive).expanduser().resolve()).casefold()
+                if actual_paths.intersection({archive + suffix for suffix in ("", "-wal", "-shm", "-journal")}):
+                    raise OmniError("Actual media output or sidecar overlaps the download archive")
             record = public_record(result.to_dict())
             if opts.write_info_json:
                 atomic_json(Path(result.path + ".info.json"), record)
@@ -233,10 +260,24 @@ def main(argv: list[str] | None = None) -> int:
                 error(None, exc)
                 if not opts.ignore_errors:
                     return 1
-        if inspecting or opts.dump_json or opts.simulate:
+        if opts.list_formats:
             for item in media:
+                print(f"{display_text(item.id or 'media')} // {display_text(item.title)}")
+                print("ID\tEXT\tRESOLUTION\tVCODEC\tACODEC\tKBIT/S\tPROTOCOL")
+                from .selection import sort_formats
+                for fmt in sort_formats(item.formats, opts.format_sort):
+                    resolution = f"{fmt.width or '?'}x{fmt.height or '?'}" if fmt.height else "audio" if fmt.vcodec == "none" else "unknown"
+                    print("\t".join(map(display_text, [fmt.format_id, fmt.ext, resolution, fmt.vcodec or "?", fmt.acodec or "?", fmt.tbr or fmt.abr or "?", fmt.protocol])))
+                if not item.formats and item.metadata.get("formats_required"):
+                    print("unavailable: no playable format candidates")
+                elif not item.formats:
+                    print(f"direct\t{display_text(item.ext)}\t{display_text(item.kind)}\t?\t?\t?\tHTTP")
+        elif inspecting or opts.dump_json or opts.simulate:
+            output = engine.prepare(media, on_error=error if opts.ignore_errors else None) if opts.format or opts.simulate else media
+            for item in output:
                 print(json.dumps(public_record(item.to_dict()), ensure_ascii=False), flush=True)
         else:
+            media = engine.prepare(media, on_error=error if opts.ignore_errors else None)
             if opts.manifest:
                 manifest = Path(opts.manifest).resolve()
                 if opts.download_archive:

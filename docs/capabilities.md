@@ -21,7 +21,7 @@ optional upstream installation. Similar flag names do not imply equal semantics.
 | Output filenames | Implemented subset | title, id, ext, kind, playlist_index; confined relative paths |
 | Integrity and archives | Implemented | SHA-256 completion sidecars and SQLite archive with file verification |
 | Headers and cookies | Implemented for direct HTTP | Netscape file cookies; sensitive headers scoped by origin |
-| Native clear HLS/DASH | Implemented via FFmpeg | HTTP(S) segments; MKV remux; local HLS and DASH fixtures verified |
+| Native clear HLS/DASH | Implemented via FFmpeg | Native HLS variant/audio-group discovery and separate stream selection; clear transfer/remux fixtures verified |
 | Adaptive recovery/options | Limited | Restart on interruption; no fragment resume, native retry policy, rate limit, credential headers or cookie files |
 | Adaptive completeness | Conservative | FFmpeg warnings fail the job, including missing segments; benign warnings may also reject a stream |
 | Audio conversion | Implemented via FFmpeg | MP3, M4A, M4B, AAC, FLAC, Opus, Ogg, WAV, AIFF; codec availability depends on FFmpeg build |
@@ -30,13 +30,15 @@ optional upstream installation. Similar flag names do not imply equal semantics.
 | Structured progress | Partial | Flushed completion/error events; byte progress, totals, and phase events pending |
 | Batch files and explicit TOML | Implemented | Native schema; no upstream config interoperability |
 | Extractor plugins | Implemented new API | Installed Python entry points; not yt-dlp plugin-compatible |
-| Native site-specific extractors | Not implemented | Generic discovery only; upstream registry is a migration checklist |
+| Native site-specific extractors | Partial | Five families, six upstream handlers partially covered; see [site ledger](sites/README.md) for per-service evidence and gaps |
 | Upstream CLI and site execution | Delegated | `omni-dlp compat ...`; all arguments passed to separately installed yt-dlp |
 | Upstream Python API | Delegated | Explicit adapter, not an API-compatible native replacement |
-| Upstream selectors/format sorting | Not ported | Use compatibility command |
+| Format selectors/sorting | Substantial native subset | IDs, aliases, filters, groups, fallbacks, merges and sorting; differential tests and [remaining grammar gaps](format-selection.md) |
 | Site authentication/browser cookies/impersonation | Not ported | Use upstream features where available through compatibility command |
-| Captions/comments/chapters/thumbnails as site metadata | Not ported | Direct subtitle/image URLs download natively; site discovery and embedding require compatibility |
-| SponsorBlock, chapter editing, multistream merges | Not ported | Compatibility command |
+| Captions, chapters and thumbnails as site metadata | Partial | Selected native extractors expose metadata and image/subtitle asset modes; universal discovery, language policy and embedding remain incomplete |
+| Comments | Not ported | Compatibility command |
+| Selected audio/video/subtitle merging | Implemented via FFmpeg | Native component downloads, content-bound receipts, cancellation, explicit container and retained inputs |
+| SponsorBlock and chapter editing | Not ported | Compatibility command |
 | RTMP, F4M, ISM, websocket/live-chat/MHTML | Not ported | Compatibility command where supported upstream |
 | JavaScript/browser execution | Not implemented | Static discovery only |
 | Native self-update/standalone executables | Not implemented | Install package from source or wheel |
@@ -69,5 +71,7 @@ streaming progress API.
 5. Complete the per-option and per-extractor migration ledger before claiming
    independent parity or removing the compatibility dependency.
 
-The number of independently ported site-specific upstream handlers is currently
-zero. The compatibility bridge does not change that number.
+Six upstream handler interfaces have partial independent implementations across
+five native extractor families. None is claimed to have complete upstream parity.
+The remaining site library is unported. The compatibility bridge does not increase
+independent coverage. [Machine-readable migration ledger](native-coverage.json).

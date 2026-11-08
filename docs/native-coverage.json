@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-07",
+  "upstream_commit": "412e7f0a4b0588fe884a02b344ac66a06538475b",
+  "complete_parity": false,
+  "native_families": [
+    {
+      "module": "youtube",
+      "upstream_handlers": [
+        "YoutubeIE"
+      ],
+      "name": "YouTube",
+      "status": "partial_independent_implementation",
+      "tests": "tests/test_youtube.py",
+      "coverage_document": "docs/sites/youtube.md",
+      "live_evidence": "blocked_http_429"
+    },
+    {
+      "module": "vimeo",
+      "upstream_handlers": [
+        "VimeoIE"
+      ],
+      "name": "Vimeo",
+      "status": "partial_independent_implementation",
+      "tests": "tests/test_vimeo.py",
+      "coverage_document": "docs/sites/vimeo.md",
+      "live_evidence": "metadata_image_subtitle_verified_video_protected"
+    },
+    {
+      "module": "bandcamp",
+      "upstream_handlers": [
+        "BandcampIE",
+        "BandcampAlbumIE"
+      ],
+      "name": "Bandcamp",
+      "status": "partial_independent_implementation",
+      "tests": "tests/test_bandcamp.py",
+      "coverage_document": "docs/sites/bandcamp.md",
+      "live_evidence": "blocked_browser_challenge"
+    },
+    {
+      "module": "archive",
+      "upstream_handlers": [
+        "ArchiveOrgIE"
+      ],
+      "name": "Internet Archive",
+      "status": "partial_independent_implementation",
+      "tests": "tests/test_archive_extractor.py",
+      "coverage_document": "docs/sites/archive.md",
+      "live_evidence": "audio_document_verified"
+    },
+    {
+      "module": "wikimedia",
+      "upstream_handlers": [
+        "WikimediaIE"
+      ],
+      "name": "Wikimedia",
+      "status": "partial_independent_implementation",
+      "tests": "tests/test_wikimedia.py",
+      "coverage_document": "docs/sites/wikimedia.md",
+      "live_evidence": "image_audio_video_category_verified"
+    }
+  ]
+}

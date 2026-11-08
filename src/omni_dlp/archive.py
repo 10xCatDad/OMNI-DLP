@@ -10,13 +10,13 @@ from .models import DownloadResult, Media
 
 
 def identity(media: Media, variant: str = "") -> str:
-    return hashlib.sha256((media.url + "\0" + variant).encode()).hexdigest()
+    return hashlib.sha256((str(media.metadata.get("resource_id") or media.url) + "\0" + variant).encode()).hexdigest()
 
 
 class Archive:
     def __init__(self, path: str):
-        self.path = path
-        Path(path).parent.mkdir(parents=True, exist_ok=True)
+        self.path = str(Path(path).expanduser())
+        Path(self.path).parent.mkdir(parents=True, exist_ok=True)
         with self._connect() as db:
             # Serialize schema creation/migration across concurrent CLI processes.
             db.execute("BEGIN IMMEDIATE")

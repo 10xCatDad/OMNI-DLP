@@ -27,3 +27,6 @@ The source registry includes redirect/error handlers, so extractor counts are
 not counts of distinct working websites. The issue traversal completed, but
 GitHub repository metadata counted two more records than both traversal and
 search. That discrepancy remains explicit in the snapshot.
+
+[YouTube challenge research](YOUTUBE-CHALLENGES.md) records independently verified
+signature-transform feasibility and the remaining compiler/runtime requirements.

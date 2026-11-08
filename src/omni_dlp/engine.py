@@ -11,7 +11,7 @@ from typing import Callable
 
 from .archive import Archive
 from .discovery import discover
-from .models import DownloadResult, Media, OmniError
+from .models import DownloadResult, Format, Media, OmniError
 from .plugins import discover_plugin
 from .transfer import TransferOptions, download
 
@@ -27,6 +27,9 @@ class Options:
     remux_format: str | None = None
     plugins: bool = True
     direct: bool = False
+    format: str | None = None
+    format_sort: str | None = None
+    merge_output_format: str = "mkv"
 
 
 class Downloader:
@@ -67,18 +70,140 @@ class Downloader:
                       max_items=opts.max_items)
         result = discover_plugin(url, **kwargs) if opts.plugins else None
         if result is None:
-            return discover(url, **kwargs)
+            from .extractors import extract_builtin
+            result = extract_builtin(url, **kwargs)
+        if result is None:
+            result = discover(url, **kwargs)
         if opts.media_types:
             result = [item for item in result if item.kind in opts.media_types]
-        return result[:opts.max_items]
+        return self._expand_manifests(result[:opts.max_items], url)
+
+    def _expand_manifests(self, media: list[Media], source: str) -> list[Media]:
+        from .extractors.common import ExtractorContext
+        from .manifests import parse_hls
+        context = ExtractorContext(source, headers=self.options.transfer.headers,
+                                   cookies=self.options.transfer.cookies, timeout=self.options.transfer.timeout)
+        cache = {}
+        requests = 0
+        output = []
+        for item in media:
+            formats = []
+            warnings = []
+            for fmt in item.formats:
+                if fmt.protocol not in {"hls", "m3u8", "m3u8_native"}:
+                    formats.append(fmt)
+                    continue
+                cache_key = (fmt.url, tuple(sorted(fmt.headers.items())))
+                if cache_key not in cache and requests >= 16:
+                    formats.append(fmt)
+                    warnings.append("Manifest expansion request limit reached")
+                    continue
+                try:
+                    if cache_key not in cache:
+                        requests += 1
+                        data, final_url, final_headers = context.get_document(fmt.url, headers=fmt.headers)
+                        text = data.decode("utf-8-sig", errors="replace")
+                        cache[cache_key] = parse_hls(text, final_url, headers=final_headers)
+                    candidates = cache[cache_key]
+                    if candidates:
+                        formats.extend(replace(f, format_id=f"{fmt.format_id}-{f.format_id}",
+                            metadata={**fmt.metadata, **f.metadata}) for f in candidates)
+                    else:
+                        formats.append(fmt)
+                except OmniError as exc:
+                    # Keep alternate progressive representations usable. Failed
+                    # manifests are not advertised as verified representations.
+                    warnings.append(str(exc))
+            metadata = dict(item.metadata)
+            if item.formats:
+                metadata["formats_required"] = True
+            if warnings:
+                metadata["format_warnings"] = warnings
+            output.append(replace(item, formats=formats, metadata=metadata))
+        return output
+
+    def prepare(self, media: list[Media], *,
+                on_error: Callable[[Media, Exception], None] | None = None) -> list[Media]:
+        """Select representations, optionally continuing after an item fails."""
+        prepared = []
+        for item in media:
+            try:
+                prepared.extend(self._prepare([item]))
+            except OmniError as exc:
+                if on_error is None:
+                    raise
+                on_error(item, exc)
+        return prepared
+
+    def _prepare(self, media: list[Media]) -> list[Media]:
+        """Select concrete representations without mutating extractor records."""
+        from .selection import select_formats
+        from .transfer import _origin
+        selected = []
+        for item in media:
+            if not item.formats and item.metadata.get("formats_required"):
+                raise OmniError("No playable format candidates remain after manifest inspection")
+            if item.requested_formats or not item.formats:
+                if self.options.format and not item.requested_formats:
+                    candidates = [Format(item.url, format_id="direct", ext=item.ext,
+                                         vcodec="none" if item.kind == "audio" else "",
+                                         acodec="none" if item.kind not in {"audio", "video"} else "")]
+                else:
+                    selected.append(item)
+                    continue
+            else:
+                candidates = item.formats
+            expression = self.options.format
+            if not expression:
+                expression = "bestaudio/best" if item.kind == "audio" else "bestvideo+bestaudio/best"
+                if item.kind not in {"audio", "video"}:
+                    expression = "best*"
+            groups = select_formats(candidates, expression, self.options.format_sort)
+            if not groups:
+                raise OmniError(f"No formats match the requested selection for item {item.id or 'unknown'!r}")
+            for group in groups:
+                if not group:
+                    continue
+                combined = "+".join(fmt.format_id or "unknown" for fmt in group)
+                metadata = {**item.metadata, "format_id": combined}
+                logical = item.metadata.get("archive_id")
+                if logical:
+                    metadata["resource_id"] = str(logical) + "|format:" + combined
+                identity = item.id + "." + combined if len(groups) > 1 else item.id
+                if len(group) > 1:
+                    selected.append(replace(item, id=identity, ext=self.options.merge_output_format,
+                                            metadata=metadata, requested_formats=group))
+                else:
+                    fmt = group[0]
+                    inherited = item.headers
+                    if _origin(item.url) != _origin(fmt.url):
+                        inherited = {k: v for k, v in inherited.items() if k.lower() in {
+                            "user-agent", "accept", "accept-language", "accept-encoding"}}
+                    reserved = {key: metadata[key] for key in (
+                        "resource_id", "archive_id", "format_id", "extractor", "formats_required") if key in metadata}
+                    metadata = {**metadata, **fmt.metadata, **reserved, "protocol": fmt.protocol}
+                    kind = "audio" if fmt.vcodec == "none" and fmt.acodec != "none" else item.kind
+                    selected.append(replace(item, url=fmt.url, id=identity, kind=kind,
+                        ext=fmt.ext or item.ext, mime_type="", metadata=metadata,
+                        source_url=item.source_url or item.url, headers={**inherited, **fmt.headers}, requested_formats=[fmt]))
+        return selected
 
     def fetch_one(self, media: Media) -> DownloadResult:
         opts = self.options
+        if media.formats and not media.requested_formats:
+            prepared = self.prepare([media])
+            if len(prepared) != 1:
+                raise OmniError("Selection produces multiple outputs; use Downloader.fetch")
+            media = prepared[0]
         if opts.transfer.cancel_event is not None and opts.transfer.cancel_event.is_set():
             raise OmniError("Download cancelled")
         # Protect archive storage even for callers using this single-item API.
-        self.output_paths(media)
+        planned = self.output_paths(media)
         variant = f"audio={opts.audio_format};remux={opts.remux_format}"
+        if len(media.requested_formats) > 1:
+            variant += ";merge=" + (planned[-1].suffix.lower().lstrip(".") or opts.merge_output_format)
+        elif not opts.direct and (media.ext in {"m3u8", "mpd"} or media.metadata.get("protocol") in {"hls", "dash", "m3u8", "m3u8_native"}):
+            variant += ";adaptive=" + (planned[0].suffix.lower().lstrip(".") or "mkv")
         if opts.direct:
             variant += ";direct=True"
         if self.archive:
@@ -92,7 +217,10 @@ class Downloader:
                         "conversion": opts.audio_format or opts.remux_format})
                 return existing
         protocol = media.metadata.get("protocol")
-        if not opts.direct and (protocol in {"hls", "dash"} or media.ext in {"m3u8", "mpd"}):
+        if len(media.requested_formats) > 1:
+            from .merge import download_merged
+            result = download_merged(media, opts.transfer, container=opts.merge_output_format)
+        elif not opts.direct and (protocol in {"hls", "dash", "m3u8", "m3u8_native"} or media.ext in {"m3u8", "mpd"}):
             from .streams import download_stream
             result = download_stream(media, opts.transfer)
         else:
@@ -111,10 +239,15 @@ class Downloader:
     def output_paths(self, item: Media) -> list[Path]:
         """Planned media outputs, including retained conversion inputs."""
         from .transfer import output_path
-        adaptive = not self.options.direct and (item.ext in {"m3u8", "mpd"} or item.metadata.get("protocol") in {"hls", "dash"})
-        mapped = replace(item, ext="mkv") if adaptive else item
-        target = output_path(mapped, self.options.transfer)
-        destinations = [target]
+        adaptive = not self.options.direct and (item.ext in {"m3u8", "mpd"} or item.metadata.get("protocol") in {"hls", "dash", "m3u8", "m3u8_native"})
+        if len(item.requested_formats) > 1:
+            from .merge import planned_paths
+            destinations = planned_paths(item, self.options.transfer, container=self.options.merge_output_format)
+            target = destinations[-1]
+        else:
+            mapped = replace(item, ext="mkv") if adaptive else item
+            target = output_path(mapped, self.options.transfer)
+            destinations = [target]
         extension = self.options.audio_format or self.options.remux_format
         if extension:
             converted = target.with_suffix("." + extension)
@@ -135,7 +268,9 @@ class Downloader:
               on_result: Callable[[DownloadResult], None] | None = None,
               on_error: Callable[[Media, Exception], None] | None = None) -> list[DownloadResult]:
         # Deduplicate before submitting; avoid two writers racing for the same URL.
-        unique = list({item.url: item for item in media}.values())
+        def key(item):
+            return item.url, tuple(fmt.format_id for fmt in item.requested_formats)
+        unique = list({key(item): item for item in self.prepare(media, on_error=on_error)}.values())
         paths: set[str] = set()
         for item in unique:
             occupied = set()
@@ -145,7 +280,7 @@ class Downloader:
             if paths.intersection(occupied):
                 raise OmniError("Multiple items resolve to overlapping output paths; include %(id)s in --output")
             paths.update(occupied)
-        completed: dict[str, DownloadResult] = {}
+        completed: dict[tuple, DownloadResult] = {}
         transfer = self.options.transfer
         previous_event = transfer.cancel_event
         cancel_event = previous_event if previous_event is not None else Event()
@@ -164,7 +299,7 @@ class Downloader:
                     else:
                         raise
                 else:
-                    completed[item.url] = result
+                    completed[key(item)] = result
                     if on_result:
                         on_result(result)
         except BaseException:
@@ -177,4 +312,4 @@ class Downloader:
         finally:
             pool.shutdown(wait=True, cancel_futures=True)
             transfer.cancel_event = previous_event
-        return [completed[item.url] for item in unique if item.url in completed]
+        return [completed[key(item)] for item in unique if key(item) in completed]

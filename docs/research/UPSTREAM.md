@@ -123,8 +123,8 @@ test results for the executable interface.
 | Selection | Media-kind filters and native item limits | Upstream expression grammar, date/view/age filters, playlist range and ordering equivalence |
 | Output management | Native templates, paths, metadata/manifests, integrity hashes, archive and concurrent jobs | Every upstream template conversion, path type, overwrite and archive edge case |
 | Postprocessing | FFmpeg audio extraction and remux operations | SponsorBlock, multistream merge logic, metadata/subtitle/thumbnail embedding, chapter edits, all converters/fixups |
-| Command/API | Native CLI, batch inputs, TOML settings, inspection/simulation and plugin API | Drop-in CLI/Python API and plugin compatibility |
-| Site library | Generic discovery only | All 1,754 upstream registered handlers remain unported |
+| Command/API | Native CLI, format grammar subset, batch inputs, TOML settings, inspection/simulation and plugin API | Full drop-in CLI/Python API and plugin compatibility |
+| Site library | Partial independent implementations in five families | Six handler interfaces partially covered; all other handlers unported; no claim of full site parity |
 | Compatibility command | Explicit delegation to installed yt-dlp | This is upstream execution, not an independent rewrite |
 
 ## Implementation priorities derived from the inventory

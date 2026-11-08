@@ -4,7 +4,11 @@ The native implementation separates discovery, transfers, and orchestration. It 
 
 | Module | Responsibility |
 | --- | --- |
-| `models` | Media-neutral records and actionable errors |
+| `models` | Media-neutral records, selectable formats and actionable errors |
+| `extractors` | Independent site parsers and a bounded, credential-scoped HTTP client |
+| `manifests` | Native HLS variant and audio-group parsing |
+| `selection` | Bounded format expression/filter/sort implementation |
+| `merge` | Verified component downloads and local FFmpeg stream assembly |
 | `types` | MIME/extension category registry |
 | `discovery` | Bounded HTTP probing, static page/feed/manifest extraction |
 | `transfer` | Streaming HTTP transfers, validators, retries, hashing, atomic publication |
@@ -15,7 +19,7 @@ The native implementation separates discovery, transfers, and orchestration. It 
 | `cli` | Native options, explicit TOML config, JSON events and batch URLs |
 | `compat` | Optional upstream passthrough; no native parity claim |
 
-A `Media` record has `url`, `title`, `id`, `kind`, `ext`, `mime_type`, `source_url`, `headers`, and `metadata`. Native discovery returns a bounded list. Downloads return `DownloadResult(media, path, size, sha256, skipped)`. Feed/page traversal order is deterministic; concurrent completion order is not. The API returns successful results in input order.
+A `Media` record has `url`, `title`, `id`, `kind`, `ext`, `mime_type`, `source_url`, `headers`, and `metadata`. It also carries `formats` and `requested_formats`, lists of typed `Format` records. Native discovery returns a bounded list. `Downloader.prepare()` selects representations; `fetch()` also prepares records automatically. Logical extractor/resource identities distinguish formats while surviving signed-URL refreshes. Archives also distinguish effective adaptive/merge containers. Downloads return `DownloadResult(media, path, size, sha256, skipped)`. Feed/page traversal order is deterministic; concurrent completion order is not. The API returns successful results in input order.
 
 ## Plugin contract
 

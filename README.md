@@ -2,7 +2,7 @@
 
 Download images, audio, video, documents, archives, fonts, models, and other HTTP files through one media-neutral interface.
 
-**Status: early alpha, incomplete rewrite.** The native core is new Python code with no runtime dependencies. It does **not** yet replace yt-dlp's site-specific extractors or full option surface. An explicit optional `compat` command runs yt-dlp unchanged while native coverage grows. Delegation is not native feature parity.
+**Status: early alpha, incomplete rewrite.** The native core is new Python code with no runtime dependencies. It includes partial native implementations for YouTube, Vimeo, Bandcamp, Internet Archive, and Wikimedia, plus format selection and multistream merging. It does **not** yet replace yt-dlp's full site library or option surface. An explicit optional `compat` command runs yt-dlp unchanged while native coverage grows. Delegation is not native feature parity.
 
 ## Install
 
@@ -50,11 +50,33 @@ omni-dlp 'https://example.org/stream.m3u8'
 
 These are example addresses. `--dump-json` and `--simulate` also perform discovery without downloading. `--progress-json` writes flushed item-completion and error events to stderr. This is not byte-level progress reporting. `--ignore-errors` continues other items but returns a nonzero exit status if anything fails.
 
-Native discovery handles direct HTTP(S) resources, static HTML media and metadata, RSS/Atom enclosures, JSON Feed attachments, and JSON media manifests. It does not execute JavaScript, solve authentication challenges, or recursively crawl websites. Images are full downloadable assets rather than merely video thumbnails. Known file types get useful categories; arbitrary HTTP files remain downloadable as `other`. Server MIME metadata and URL extensions drive classification; content decoding and magic-byte validation are not implemented.
+Native discovery handles direct HTTP(S) resources, static HTML media and metadata, RSS/Atom enclosures, JSON Feed attachments, and JSON media manifests. Generic discovery does not execute JavaScript, solve authentication challenges, or recursively crawl websites. Built-in extractors can enumerate their documented collections within explicit bounds. Images are full downloadable assets rather than merely video thumbnails. Known file types get useful categories; arbitrary HTTP files remain downloadable as `other`. Server MIME metadata and URL extensions drive classification; content decoding and magic-byte validation are not implemented.
 
 The native transfer engine streams to temporary files, validates range responses and resource validators, checks truncation, calculates SHA-256, and publishes completed files atomically. It supports bounded retries, per-transfer speed and size limits, headers, Netscape cookies, and safe output templates. Resume requires a matching partial record and server support; unsafe appends are rejected. Ctrl-C cancels queued jobs, interrupts rate/retry waits, and stops FFmpeg. An active stalled HTTP request can take up to the socket timeout to stop. A completed file is skipped only when its source identity and digest match. If an existing file fails verification, choose a new path or explicitly use `--force-overwrites`.
 
 Output templates support the native record fields, for example `%(kind)s/%(title)s [%(id)s].%(ext)s`. See [capabilities](docs/capabilities.md) for precise boundaries, adaptive-stream restrictions, and migration milestones.
+
+## Native sites and formats
+
+```sh
+omni-dlp --list-extractors
+omni-dlp -F 'https://archive.org/details/testmp3testfile'
+omni-dlp -f 'bestaudio[ext=mp3]/bestaudio' 'https://archive.org/details/testmp3testfile'
+omni-dlp -f original 'https://commons.wikimedia.org/wiki/File:Example.webm'
+```
+
+`-f` supports format IDs, filters, `+` merging, `/` fallbacks, and comma-separated
+outputs. `-S` orders formats; `--merge-output-format` selects the merged container.
+Audio/video components are retained and verified before local FFmpeg merging.
+Use `%(format_id)s` in custom filenames to distinguish representations.
+See [format selection](docs/format-selection.md) and [native site coverage](docs/sites/README.md)
+for the exact supported grammar, URLs, live evidence, and limitations.
+
+Internet Archive and Wikimedia have verified live media downloads. Vimeo
+metadata, thumbnails and captions were verified; the sampled video was protected.
+YouTube returned HTTP 429 and Bandcamp served a browser challenge during live
+checks. Their independently implemented parsers have fixture tests, but live
+playback is not claimed. No native path silently falls back to yt-dlp.
 
 ## Configuration
 
